@@ -301,9 +301,12 @@ const App = () => {
 // Fix Poster Modal - search and select correct poster
 const FixPosterModal = ({ item, type, onClose, onSelect }) => {
   const [query, setQuery] = React.useState(item.title);
+  const [year, setYear] = React.useState(item.year || '');
   const [results, setResults] = React.useState([]);
   const [searching, setSearching] = React.useState(false);
   const [source, setSource] = React.useState('tmdb');
+  const [manualUrl, setManualUrl] = React.useState('');
+  const [showManual, setShowManual] = React.useState(false);
 
   const doSearch = async () => {
     if (!query) return;
@@ -312,9 +315,10 @@ const FixPosterModal = ({ item, type, onClose, onSelect }) => {
     
     if (source === 'tmdb') {
       const endpoint = type === 'films' ? 'search/movie' : 'search/tv';
+      const yearParam = year ? `&year=${year}` : '';
       try {
         const res = await fetch(
-          `https://api.themoviedb.org/3/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}`
+          `https://api.themoviedb.org/3/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}${yearParam}`
         );
         const data = await res.json();
         setResults(data.results?.slice(0, 12).map(m => ({
@@ -327,9 +331,10 @@ const FixPosterModal = ({ item, type, onClose, onSelect }) => {
       } catch(e) {}
     } else {
       const omdbType = type === 'films' ? 'movie' : 'series';
+      const yearParam = year ? `&y=${year}` : '';
       try {
         const res = await fetch(
-          `https://www.omdbapi.com/?apikey=${OMDB_KEY}&s=${encodeURIComponent(query)}&type=${omdbType}`
+          `https://www.omdbapi.com/?apikey=${OMDB_KEY}&s=${encodeURIComponent(query)}&type=${omdbType}${yearParam}`
         );
         const data = await res.json();
         if (data.Search) {
@@ -350,6 +355,12 @@ const FixPosterModal = ({ item, type, onClose, onSelect }) => {
     doSearch();
   }, [source]);
 
+  const applyManualUrl = () => {
+    if (manualUrl && manualUrl.startsWith('http')) {
+      onSelect(item.id, manualUrl);
+    }
+  };
+
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal fix-modal" onClick={e => e.stopPropagation()}>
@@ -361,11 +372,19 @@ const FixPosterModal = ({ item, type, onClose, onSelect }) => {
           <div className="fix-search">
             <input
               type="text"
-              className="search-box full"
+              className="search-box"
               value={query}
               onChange={e => setQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && doSearch()}
               placeholder="Titre (anglais, original...)"
+              style={{flex: 1}}
+            />
+            <input
+              type="number"
+              className="search-box year-input"
+              value={year}
+              onChange={e => setYear(e.target.value)}
+              placeholder="Année"
             />
             <button className="btn btn-primary" onClick={doSearch}>🔍</button>
           </div>
@@ -400,6 +419,25 @@ const FixPosterModal = ({ item, type, onClose, onSelect }) => {
           {results.length === 0 && !searching && (
             <div className="empty-small">Aucun résultat. Essayez le titre original ou anglais.</div>
           )}
+          
+          <div className="manual-section">
+            <button className="link-btn" onClick={() => setShowManual(!showManual)}>
+              {showManual ? '▼ Masquer' : '▶ Coller une URL d\'affiche'}
+            </button>
+            {showManual && (
+              <div className="manual-url">
+                <input
+                  type="text"
+                  className="search-box"
+                  value={manualUrl}
+                  onChange={e => setManualUrl(e.target.value)}
+                  placeholder="https://..."
+                  style={{flex: 1}}
+                />
+                <button className="btn btn-primary" onClick={applyManualUrl}>OK</button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
