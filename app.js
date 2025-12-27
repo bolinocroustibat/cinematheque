@@ -119,7 +119,7 @@ const App = () => {
   };
 
   const loadFromSheets = async () => {
-    setLoading(true);
+    setSyncing(true);
     try {
       const res = await fetch(SHEETS_API);
       const data = await res.json();
@@ -139,28 +139,27 @@ const App = () => {
         watched: item.watched === 'true' || item.watched === true
       }));
       
-      // Check if we need to fetch posters
+      // Mettre à jour immédiatement avec les données du serveur
+      setFilms(loadedFilms);
+      setSeries(loadedSeries);
+      setLoading(false);
+      setSyncing(false);
+      setLastSync(new Date());
+      
+      // Check if we need to fetch posters (en arrière-plan)
       const missingPosters = loadedFilms.filter(f => !f.poster).length;
       
       if (missingPosters > 0) {
-        setLoading(false); // Show UI while fetching posters
-        loadedFilms = await fetchMissingPosters(loadedFilms);
+        const updatedFilms = await fetchMissingPosters(loadedFilms);
+        setFilms(updatedFilms);
         // Save updated films with posters to Sheets
-        await saveToSheets(loadedFilms, loadedSeries);
+        await saveToSheets(updatedFilms, loadedSeries);
       }
-      
-      setFilms(loadedFilms);
-      setSeries(loadedSeries);
-      setLastSync(new Date());
     } catch(e) {
       console.error('Erreur chargement:', e);
-      // Fallback to localStorage
-      const savedFilms = localStorage.getItem('cine_films');
-      const savedSeries = localStorage.getItem('cine_series');
-      if (savedFilms) setFilms(JSON.parse(savedFilms));
-      if (savedSeries) setSeries(JSON.parse(savedSeries));
+      setSyncing(false);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const saveToSheets = async (newFilms, newSeries) => {
@@ -242,10 +241,28 @@ const App = () => {
     }
   };
 
-  const updatePoster = (id, poster) => {
-    const newItems = items.map(f => f.id === id ? {...f, poster} : f);
+  const updatePoster = (id, updates) => {
+    // updates peut être {poster, title, year} ou juste {poster}
+    const newItems = items.map(f => {
+      if (f.id === id) {
+        return {
+          ...f,
+          poster: updates.poster || f.poster,
+          title: updates.title || f.title,
+          year: updates.year || f.year
+        };
+      }
+      return f;
+    });
     setItems(newItems);
-    if (selected?.id === id) setSelected({...selected, poster});
+    if (selected?.id === id) {
+      setSelected({
+        ...selected,
+        poster: updates.poster || selected.poster,
+        title: updates.title || selected.title,
+        year: updates.year || selected.year
+      });
+    }
     setShowFix(false);
     
     if (tab === 'films') {
@@ -255,7 +272,7 @@ const App = () => {
     }
   };
 
-  if (loading) {
+  if (loading && films.length === 0) {
     return (
       <div className="loading-screen">
         <div className="loading-spinner"></div>
@@ -496,15 +513,24 @@ const FixPosterModal = ({ item, type, onClose, onSelect }) => {
 
   const applyManualUrl = () => {
     if (manualUrl && manualUrl.startsWith('http')) {
-      onSelect(item.id, manualUrl);
+      onSelect(item.id, { poster: manualUrl });
     }
+  };
+
+  const selectResult = (r) => {
+    if (!r.poster) return;
+    onSelect(item.id, {
+      poster: r.poster,
+      title: r.title,
+      year: parseInt(r.year) || item.year
+    });
   };
 
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal fix-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-head">
-          <div className="modal-title">Corriger l'affiche</div>
+          <div className="modal-title">Corriger le film</div>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
@@ -540,7 +566,7 @@ const FixPosterModal = ({ item, type, onClose, onSelect }) => {
               <div 
                 key={r.id} 
                 className={`fix-result ${!r.poster ? 'no-poster' : ''}`}
-                onClick={() => r.poster && onSelect(item.id, r.poster)}
+                onClick={() => selectResult(r)}
               >
                 {r.poster ? (
                   <img src={r.poster} alt="" />
