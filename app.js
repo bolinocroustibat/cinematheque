@@ -408,16 +408,16 @@ const App = () => {
         
         <div className="tabs">
           <button className={`tab ${tab === 'films' ? 'active' : ''}`} onClick={() => { setTab('films'); setGenre(''); }}>
-            🎬 <span className="tab-label">Films</span> <span className="tab-count">{films.length}</span>
+            Films <span className="tab-count">{films.length}</span>
           </button>
           <button className={`tab ${tab === 'series' ? 'active' : ''}`} onClick={() => { setTab('series'); setGenre(''); }}>
-            📺 <span className="tab-label">Séries</span> <span className="tab-count">{series.length}</span>
+            Séries <span className="tab-count">{series.length}</span>
           </button>
           <button className={`tab ${tab === 'books' ? 'active' : ''}`} onClick={() => { setTab('books'); setGenre(''); }}>
-            📚 <span className="tab-label">Livres</span> <span className="tab-count">{books.length}</span>
+            Livres <span className="tab-count">{books.length}</span>
           </button>
           <button className={`tab ${tab === 'comics' ? 'active' : ''}`} onClick={() => { setTab('comics'); setGenre(''); }}>
-            📖 <span className="tab-label">BD</span> <span className="tab-count">{comics.length}</span>
+            BD <span className="tab-count">{comics.length}</span>
           </button>
         </div>
         
@@ -428,9 +428,11 @@ const App = () => {
             value={search} 
             onChange={e => setSearch(e.target.value)} 
           />
+          <div className="filter-divider"></div>
           <button className={`filter-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>Tous</button>
           <button className={`filter-btn ${filter === 'unwatched' ? 'active' : ''}`} onClick={() => setFilter('unwatched')}>{tab === 'books' || tab === 'comics' ? 'À lire' : 'À voir'}</button>
           <button className={`filter-btn ${filter === 'watched' ? 'active' : ''}`} onClick={() => setFilter('watched')}>{tab === 'books' || tab === 'comics' ? 'Lus' : 'Vus'}</button>
+          <div className="filter-divider"></div>
           <select value={genre} onChange={e => setGenre(e.target.value)}>
             <option value="">Genre</option>
             {genres.map(g => <option key={g} value={g}>{g}</option>)}
@@ -441,8 +443,8 @@ const App = () => {
             <option value="alpha-asc">A → Z</option>
             <option value="alpha-desc">Z → A</option>
             <option value="director">{tab === 'films' ? 'Réalisateur' : tab === 'series' ? 'Créateur' : 'Auteur'}</option>
-            <option value="added">Ajout récent</option>
-            <option value="unwatched">{tab === 'books' || tab === 'comics' ? 'Non lus d\'abord' : 'Non vus d\'abord'}</option>
+            <option value="added">Récents</option>
+            <option value="unwatched">{tab === 'books' || tab === 'comics' ? 'Non lus' : 'Non vus'}</option>
           </select>
           <div className="view-controls">
             <button className={`view-btn ${view === 'grid' ? 'active' : ''}`} onClick={() => setView('grid')}>▦</button>
@@ -500,7 +502,7 @@ const App = () => {
                         {f.poster ? (
                           <img className="list-poster" src={getSmallPoster(f.poster)} alt="" loading="lazy" />
                         ) : (
-                          <div className="list-poster-empty">{tab === 'films' ? '🎬' : tab === 'series' ? '📺' : tab === 'books' ? '📚' : '📖'}</div>
+                          <div className="list-poster-empty">?</div>
                         )}
                         <div className="list-info">
                           <div className="list-title">{f.title}</div>
