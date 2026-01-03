@@ -1,7 +1,20 @@
 const TMDB_KEY = '2dca580c2a14b55200e784d157207b4d';
-const TMDB_IMG = 'https://image.tmdb.org/t/p/w300';
+const TMDB_IMG_SM = 'https://image.tmdb.org/t/p/w154';
+const TMDB_IMG_LG = 'https://image.tmdb.org/t/p/w300';
 const OMDB_KEY = '2a89ad59';
 const SHEETS_API = 'https://script.google.com/macros/s/AKfycbwKSMuZksZwy6JLmBo9lq0kF9rwDkTP63_BY_a7czQHYiwuEJTWNUMJJiYZJCksNmjnUw/exec';
+
+// Helper to get small poster URL for grid
+const getSmallPoster = (url) => {
+  if (!url) return null;
+  return url.replace('/w300/', '/w154/').replace('/w500/', '/w154/');
+};
+
+// Helper to get large poster URL for modal
+const getLargePoster = (url) => {
+  if (!url) return null;
+  return url.replace('/w154/', '/w300/').replace('/w92/', '/w300/');
+};
 
 // Fetch poster from TMDB then fallback to OMDb
 const fetchPoster = async (title, year, type = 'movie') => {
@@ -12,7 +25,7 @@ const fetchPoster = async (title, year, type = 'movie') => {
     );
     const data = await res.json();
     if (data.results?.[0]?.poster_path) {
-      return TMDB_IMG + data.results[0].poster_path;
+      return TMDB_IMG_SM + data.results[0].poster_path;
     }
   } catch(e) {}
   
@@ -33,8 +46,22 @@ const fetchPoster = async (title, year, type = 'movie') => {
 
 const App = () => {
   const [tab, setTab] = React.useState('films');
-  const [films, setFilms] = React.useState([]);
-  const [series, setSeries] = React.useState([]);
+  const [films, setFilms] = React.useState(() => {
+    const cached = localStorage.getItem('cine_films_cache');
+    return cached ? JSON.parse(cached) : [];
+  });
+  const [series, setSeries] = React.useState(() => {
+    const cached = localStorage.getItem('cine_series_cache');
+    return cached ? JSON.parse(cached) : [];
+  });
+  const [books, setBooks] = React.useState(() => {
+    const cached = localStorage.getItem('cine_books_cache');
+    return cached ? JSON.parse(cached) : [];
+  });
+  const [comics, setComics] = React.useState(() => {
+    const cached = localStorage.getItem('cine_comics_cache');
+    return cached ? JSON.parse(cached) : [];
+  });
   const [search, setSearch] = React.useState('');
   const [filter, setFilter] = React.useState('all');
   const [genre, setGenre] = React.useState('');
@@ -43,19 +70,46 @@ const App = () => {
   const [cardSize, setCardSize] = React.useState(120);
   const [showAdd, setShowAdd] = React.useState(false);
   const [showFix, setShowFix] = React.useState(false);
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(false);
   const [syncing, setSyncing] = React.useState(false);
   const [lastSync, setLastSync] = React.useState(null);
 
-  const items = tab === 'films' ? films : series;
-  const setItems = tab === 'films' ? setFilms : setSeries;
+  const items = tab === 'films' ? films : tab === 'series' ? series : tab === 'books' ? books : comics;
+  const setItems = tab === 'films' ? setFilms : tab === 'series' ? setSeries : tab === 'books' ? setBooks : setComics;
 
   const [posterProgress, setPosterProgress] = React.useState('');
 
   // Load from Google Sheets on mount
   React.useEffect(() => {
+    const cached = localStorage.getItem('cine_films_cache');
+    if (!cached) setLoading(true);
     loadFromSheets();
   }, []);
+
+  // Save to cache whenever data changes
+  React.useEffect(() => {
+    if (films.length > 0) {
+      localStorage.setItem('cine_films_cache', JSON.stringify(films));
+    }
+  }, [films]);
+
+  React.useEffect(() => {
+    if (series.length > 0) {
+      localStorage.setItem('cine_series_cache', JSON.stringify(series));
+    }
+  }, [series]);
+
+  React.useEffect(() => {
+    if (books.length > 0) {
+      localStorage.setItem('cine_books_cache', JSON.stringify(books));
+    }
+  }, [books]);
+
+  React.useEffect(() => {
+    if (comics.length > 0) {
+      localStorage.setItem('cine_comics_cache', JSON.stringify(comics));
+    }
+  }, [comics]);
 
   // Fetch missing posters after loading
   const fetchMissingPosters = async (filmsList) => {
@@ -85,12 +139,12 @@ const App = () => {
   };
 
   const loadFromSheets = async () => {
-    setLoading(true);
+    setSyncing(true);
     try {
       const res = await fetch(SHEETS_API);
       const data = await res.json();
       
-      let loadedFilms = data.filter(item => item.type !== 'series').map(item => ({
+      let loadedFilms = data.filter(item => item.type === 'film' || !item.type).map(item => ({
         ...item,
         id: parseInt(item.id) || item.id,
         year: parseInt(item.year) || 0,
@@ -104,37 +158,54 @@ const App = () => {
         seasons: parseInt(item.seasons) || 0,
         watched: item.watched === 'true' || item.watched === true
       }));
+
+      const loadedBooks = data.filter(item => item.type === 'book').map(item => ({
+        ...item,
+        id: parseInt(item.id) || item.id,
+        year: parseInt(item.year) || 0,
+        watched: item.watched === 'true' || item.watched === true
+      }));
+
+      const loadedComics = data.filter(item => item.type === 'comic').map(item => ({
+        ...item,
+        id: parseInt(item.id) || item.id,
+        year: parseInt(item.year) || 0,
+        watched: item.watched === 'true' || item.watched === true
+      }));
       
-      // Check if we need to fetch posters
+      // Mettre à jour immédiatement avec les données du serveur
+      setFilms(loadedFilms);
+      setSeries(loadedSeries);
+      setBooks(loadedBooks);
+      setComics(loadedComics);
+      setLoading(false);
+      setSyncing(false);
+      setLastSync(new Date());
+      
+      // Check if we need to fetch posters (en arrière-plan)
       const missingPosters = loadedFilms.filter(f => !f.poster).length;
       
       if (missingPosters > 0) {
-        setLoading(false); // Show UI while fetching posters
-        loadedFilms = await fetchMissingPosters(loadedFilms);
+        const updatedFilms = await fetchMissingPosters(loadedFilms);
+        setFilms(updatedFilms);
         // Save updated films with posters to Sheets
-        await saveToSheets(loadedFilms, loadedSeries);
+        await saveToSheets(updatedFilms, loadedSeries);
       }
-      
-      setFilms(loadedFilms);
-      setSeries(loadedSeries);
-      setLastSync(new Date());
     } catch(e) {
       console.error('Erreur chargement:', e);
-      // Fallback to localStorage
-      const savedFilms = localStorage.getItem('cine_films');
-      const savedSeries = localStorage.getItem('cine_series');
-      if (savedFilms) setFilms(JSON.parse(savedFilms));
-      if (savedSeries) setSeries(JSON.parse(savedSeries));
+      setSyncing(false);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const saveToSheets = async (newFilms, newSeries) => {
+  const saveToSheets = async (newFilms, newSeries, newBooks, newComics) => {
     setSyncing(true);
     try {
       const allData = [
         ...newFilms.map(f => ({...f, type: 'film'})),
-        ...newSeries.map(s => ({...s, type: 'series'}))
+        ...newSeries.map(s => ({...s, type: 'series'})),
+        ...(newBooks || books).map(b => ({...b, type: 'book'})),
+        ...(newComics || comics).map(c => ({...c, type: 'comic'}))
       ];
       
       await fetch(SHEETS_API, {
@@ -171,6 +242,15 @@ const App = () => {
     watched: items.filter(f => f.watched).length 
   };
 
+  const saveAll = (newFilms, newSeries, newBooks, newComics) => {
+    saveToSheets(
+      newFilms !== undefined ? newFilms : films,
+      newSeries !== undefined ? newSeries : series,
+      newBooks !== undefined ? newBooks : books,
+      newComics !== undefined ? newComics : comics
+    );
+  };
+
   const toggleWatch = (id, e) => {
     if (e) e.stopPropagation();
     const newItems = items.map(f => f.id === id ? {...f, watched: !f.watched} : f);
@@ -178,22 +258,20 @@ const App = () => {
     if (selected?.id === id) setSelected({...selected, watched: !selected.watched});
     
     // Save to sheets
-    if (tab === 'films') {
-      saveToSheets(newItems, series);
-    } else {
-      saveToSheets(films, newItems);
-    }
+    if (tab === 'films') saveAll(newItems, undefined, undefined, undefined);
+    else if (tab === 'series') saveAll(undefined, newItems, undefined, undefined);
+    else if (tab === 'books') saveAll(undefined, undefined, newItems, undefined);
+    else saveAll(undefined, undefined, undefined, newItems);
   };
 
   const addItem = (item) => {
     const newItems = [item, ...items];
     setItems(newItems);
     
-    if (tab === 'films') {
-      saveToSheets(newItems, series);
-    } else {
-      saveToSheets(films, newItems);
-    }
+    if (tab === 'films') saveAll(newItems, undefined, undefined, undefined);
+    else if (tab === 'series') saveAll(undefined, newItems, undefined, undefined);
+    else if (tab === 'books') saveAll(undefined, undefined, newItems, undefined);
+    else saveAll(undefined, undefined, undefined, newItems);
   };
 
   const deleteItem = (id) => {
@@ -201,27 +279,43 @@ const App = () => {
     setItems(newItems);
     setSelected(null);
     
-    if (tab === 'films') {
-      saveToSheets(newItems, series);
-    } else {
-      saveToSheets(films, newItems);
-    }
+    if (tab === 'films') saveAll(newItems, undefined, undefined, undefined);
+    else if (tab === 'series') saveAll(undefined, newItems, undefined, undefined);
+    else if (tab === 'books') saveAll(undefined, undefined, newItems, undefined);
+    else saveAll(undefined, undefined, undefined, newItems);
   };
 
-  const updatePoster = (id, poster) => {
-    const newItems = items.map(f => f.id === id ? {...f, poster} : f);
+  const updatePoster = (id, updates) => {
+    // updates peut être {poster, title, year} ou juste {poster}
+    const newItems = items.map(f => {
+      if (f.id === id) {
+        return {
+          ...f,
+          poster: updates.poster || f.poster,
+          title: updates.title || f.title,
+          year: updates.year || f.year
+        };
+      }
+      return f;
+    });
     setItems(newItems);
-    if (selected?.id === id) setSelected({...selected, poster});
+    if (selected?.id === id) {
+      setSelected({
+        ...selected,
+        poster: updates.poster || selected.poster,
+        title: updates.title || selected.title,
+        year: updates.year || selected.year
+      });
+    }
     setShowFix(false);
     
-    if (tab === 'films') {
-      saveToSheets(newItems, series);
-    } else {
-      saveToSheets(films, newItems);
-    }
+    if (tab === 'films') saveAll(newItems, undefined, undefined, undefined);
+    else if (tab === 'series') saveAll(undefined, newItems, undefined, undefined);
+    else if (tab === 'books') saveAll(undefined, undefined, newItems, undefined);
+    else saveAll(undefined, undefined, undefined, newItems);
   };
 
-  if (loading) {
+  if (loading && films.length === 0) {
     return (
       <div className="loading-screen">
         <div className="loading-spinner"></div>
@@ -237,7 +331,7 @@ const App = () => {
           <div className="logo">Ciné<span>mathèque</span></div>
           <div className="header-right">
             <div className="stats">
-              <b>{stats.total}</b> {tab} · <b>{stats.watched}</b> vu{stats.watched > 1 ? 's' : ''}
+              <b>{stats.total}</b> {tab} · <b>{stats.watched}</b> {tab === 'books' || tab === 'comics' ? (stats.watched > 1 ? 'lus' : 'lu') : (stats.watched > 1 ? 'vus' : 'vu')}
               {syncing && <span className="sync-icon"> ⟳</span>}
             </div>
             <button className="add-btn" onClick={() => setShowAdd(true)}>+ Ajouter</button>
@@ -248,10 +342,16 @@ const App = () => {
         
         <div className="tabs">
           <button className={`tab ${tab === 'films' ? 'active' : ''}`} onClick={() => { setTab('films'); setGenre(''); }}>
-            🎬 Films <span className="tab-count">{films.length}</span>
+            🎬 <span className="tab-label">Films</span> <span className="tab-count">{films.length}</span>
           </button>
           <button className={`tab ${tab === 'series' ? 'active' : ''}`} onClick={() => { setTab('series'); setGenre(''); }}>
-            📺 Séries <span className="tab-count">{series.length}</span>
+            📺 <span className="tab-label">Séries</span> <span className="tab-count">{series.length}</span>
+          </button>
+          <button className={`tab ${tab === 'books' ? 'active' : ''}`} onClick={() => { setTab('books'); setGenre(''); }}>
+            📚 <span className="tab-label">Livres</span> <span className="tab-count">{books.length}</span>
+          </button>
+          <button className={`tab ${tab === 'comics' ? 'active' : ''}`} onClick={() => { setTab('comics'); setGenre(''); }}>
+            📖 <span className="tab-label">BD</span> <span className="tab-count">{comics.length}</span>
           </button>
         </div>
         
@@ -263,8 +363,8 @@ const App = () => {
             onChange={e => setSearch(e.target.value)} 
           />
           <button className={`filter-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>Tous</button>
-          <button className={`filter-btn ${filter === 'unwatched' ? 'active' : ''}`} onClick={() => setFilter('unwatched')}>À voir</button>
-          <button className={`filter-btn ${filter === 'watched' ? 'active' : ''}`} onClick={() => setFilter('watched')}>Vus</button>
+          <button className={`filter-btn ${filter === 'unwatched' ? 'active' : ''}`} onClick={() => setFilter('unwatched')}>{tab === 'books' || tab === 'comics' ? 'À lire' : 'À voir'}</button>
+          <button className={`filter-btn ${filter === 'watched' ? 'active' : ''}`} onClick={() => setFilter('watched')}>{tab === 'books' || tab === 'comics' ? 'Lus' : 'Vus'}</button>
           <select value={genre} onChange={e => setGenre(e.target.value)}>
             <option value="">Genre</option>
             {genres.map(g => <option key={g} value={g}>{g}</option>)}
@@ -288,7 +388,7 @@ const App = () => {
                 <div key={f.id} className="card" onClick={() => setSelected(f)}>
                   {f.poster ? (
                     <>
-                      <img className="card-img" src={f.poster} alt={f.title} />
+                      <img className="card-img" src={getSmallPoster(f.poster)} alt={f.title} loading="lazy" />
                       <div className="card-info">
                         <div className="card-title">{f.title}</div>
                         <div className="card-year">{f.year}</div>
@@ -312,7 +412,7 @@ const App = () => {
               {filtered.map(f => (
                 <div key={f.id} className="list-item" onClick={() => setSelected(f)}>
                   {f.poster ? (
-                    <img className="list-poster" src={f.poster} alt="" />
+                    <img className="list-poster" src={getSmallPoster(f.poster)} alt="" loading="lazy" />
                   ) : (
                     <div className="list-poster-empty">{tab === 'films' ? '🎬' : '📺'}</div>
                   )}
@@ -346,9 +446,9 @@ const App = () => {
               <button className="modal-close" onClick={() => setSelected(null)}>×</button>
             </div>
             <div className="modal-body">
-              {selected.poster && <img className="modal-poster" src={selected.poster} alt="" />}
+              {selected.poster && <img className="modal-poster" src={getLargePoster(selected.poster)} alt="" />}
               <div className="modal-meta">
-                {selected.director || selected.creator} · {selected.year} {selected.country && `· ${selected.country}`}
+                {selected.director || selected.creator || selected.author} · {selected.year} {selected.country && `· ${selected.country}`}
               </div>
               {selected.seasons && (
                 <div className="modal-section">
@@ -379,7 +479,7 @@ const App = () => {
                   className={`btn ${selected.watched ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => toggleWatch(selected.id)}
                 >
-                  {selected.watched ? '✓ Vu' : 'Marquer vu'}
+                  {selected.watched ? (tab === 'books' || tab === 'comics' ? '✓ Lu' : '✓ Vu') : (tab === 'books' || tab === 'comics' ? 'Marquer lu' : 'Marquer vu')}
                 </button>
                 <button className="btn btn-secondary" onClick={() => setShowFix(true)}>
                   🖼️
@@ -390,8 +490,17 @@ const App = () => {
               </div>
             </div>
             <div className="modal-actions">
-              <a className="btn btn-secondary" href={`https://www.imdb.com/find?q=${encodeURIComponent(selected.title)}`} target="_blank">IMDb</a>
-              <a className="btn btn-primary" href={`https://www.justwatch.com/fr/recherche?q=${encodeURIComponent(selected.title)}`} target="_blank">Où regarder</a>
+              {(tab === 'films' || tab === 'series') ? (
+                <>
+                  <a className="btn btn-secondary" href={`https://www.imdb.com/find?q=${encodeURIComponent(selected.title)}`} target="_blank">IMDb</a>
+                  <a className="btn btn-primary" href={`https://www.justwatch.com/fr/recherche?q=${encodeURIComponent(selected.title)}`} target="_blank">Où regarder</a>
+                </>
+              ) : (
+                <>
+                  <a className="btn btn-secondary" href={`https://www.goodreads.com/search?q=${encodeURIComponent(selected.title)}`} target="_blank">Goodreads</a>
+                  <a className="btn btn-primary" href={`https://www.babelio.com/recherche.php?Recherche=${encodeURIComponent(selected.title)}`} target="_blank">Babelio</a>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -430,7 +539,7 @@ const FixPosterModal = ({ item, type, onClose, onSelect }) => {
           id: m.id,
           title: m.title || m.name,
           year: (m.release_date || m.first_air_date)?.split('-')[0],
-          poster: m.poster_path ? TMDB_IMG + m.poster_path : null,
+          poster: m.poster_path ? TMDB_IMG_SM + m.poster_path : null,
           source: 'TMDB'
         })) || []);
       } catch(e) {}
@@ -462,15 +571,24 @@ const FixPosterModal = ({ item, type, onClose, onSelect }) => {
 
   const applyManualUrl = () => {
     if (manualUrl && manualUrl.startsWith('http')) {
-      onSelect(item.id, manualUrl);
+      onSelect(item.id, { poster: manualUrl });
     }
+  };
+
+  const selectResult = (r) => {
+    if (!r.poster) return;
+    onSelect(item.id, {
+      poster: r.poster,
+      title: r.title,
+      year: parseInt(r.year) || item.year
+    });
   };
 
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal fix-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-head">
-          <div className="modal-title">Corriger l'affiche</div>
+          <div className="modal-title">Corriger le film</div>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
@@ -506,7 +624,7 @@ const FixPosterModal = ({ item, type, onClose, onSelect }) => {
               <div 
                 key={r.id} 
                 className={`fix-result ${!r.poster ? 'no-poster' : ''}`}
-                onClick={() => r.poster && onSelect(item.id, r.poster)}
+                onClick={() => selectResult(r)}
               >
                 {r.poster ? (
                   <img src={r.poster} alt="" />
@@ -555,14 +673,17 @@ const AddModal = ({ type, onClose, onAdd }) => {
   const [results, setResults] = React.useState([]);
   const [searching, setSearching] = React.useState(false);
   const [form, setForm] = React.useState({ 
-    title: '', director: '', creator: '', year: '', genre: '', source: '', 
+    title: '', director: '', creator: '', author: '', year: '', genre: '', source: '', 
     watched: false, poster: '', seasons: '' 
   });
   const [mode, setMode] = React.useState('search');
   const timeoutRef = React.useRef(null);
 
   const isFilm = type === 'films';
-  const endpoint = isFilm ? 'search/movie' : 'search/tv';
+  const isSeries = type === 'series';
+  const isBook = type === 'books';
+  const isComic = type === 'comics';
+  const isMedia = isFilm || isSeries;
 
   React.useEffect(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -571,57 +692,84 @@ const AddModal = ({ type, onClose, onAdd }) => {
     timeoutRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await fetch(`https://api.themoviedb.org/3/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=fr-FR`);
-        const data = await res.json();
-        setResults(data.results?.slice(0, 8) || []);
+        if (isMedia) {
+          const endpoint = isFilm ? 'search/movie' : 'search/tv';
+          const res = await fetch(`https://api.themoviedb.org/3/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=fr-FR`);
+          const data = await res.json();
+          setResults(data.results?.slice(0, 8) || []);
+        } else {
+          // Google Books API pour livres et BD
+          const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=8&langRestrict=fr`);
+          const data = await res.json();
+          setResults(data.items?.map(item => ({
+            id: item.id,
+            title: item.volumeInfo.title,
+            author: item.volumeInfo.authors?.join(', ') || '',
+            year: item.volumeInfo.publishedDate?.split('-')[0] || '',
+            poster: item.volumeInfo.imageLinks?.thumbnail?.replace('http:', 'https:') || null,
+            genre: item.volumeInfo.categories?.join(', ') || ''
+          })) || []);
+        }
       } catch(e) { setResults([]); }
       setSearching(false);
     }, 400);
   }, [query]);
 
   const selectItem = async (item) => {
-    try {
-      const detailEndpoint = isFilm ? `movie/${item.id}` : `tv/${item.id}`;
-      const creditEndpoint = isFilm ? `movie/${item.id}/credits` : `tv/${item.id}/credits`;
-      
-      const [details, credits] = await Promise.all([
-        fetch(`https://api.themoviedb.org/3/${detailEndpoint}?api_key=${TMDB_KEY}&language=fr-FR`).then(r => r.json()),
-        fetch(`https://api.themoviedb.org/3/${creditEndpoint}?api_key=${TMDB_KEY}`).then(r => r.json())
-      ]);
-      
-      if (isFilm) {
-        setForm({
-          title: item.title,
-          director: credits.crew?.find(c => c.job === 'Director')?.name || '',
-          year: item.release_date?.split('-')[0] || '',
-          genre: details.genres?.map(g => g.name).join(', ') || '',
-          actors: credits.cast?.slice(0, 4).map(a => a.name).join(', ') || '',
-          country: details.production_countries?.[0]?.name || '',
-          source: '',
-          watched: false,
-          poster: item.poster_path ? TMDB_IMG + item.poster_path : ''
-        });
-      } else {
-        setForm({
-          title: item.name,
-          creator: details.created_by?.[0]?.name || '',
-          year: item.first_air_date?.split('-')[0] || '',
-          genre: details.genres?.map(g => g.name).join(', ') || '',
-          actors: credits.cast?.slice(0, 4).map(a => a.name).join(', ') || '',
-          country: details.origin_country?.[0] || '',
-          seasons: details.number_of_seasons || '',
-          source: '',
-          watched: false,
-          poster: item.poster_path ? TMDB_IMG + item.poster_path : ''
-        });
+    if (isMedia) {
+      try {
+        const detailEndpoint = isFilm ? `movie/${item.id}` : `tv/${item.id}`;
+        const creditEndpoint = isFilm ? `movie/${item.id}/credits` : `tv/${item.id}/credits`;
+        
+        const [details, credits] = await Promise.all([
+          fetch(`https://api.themoviedb.org/3/${detailEndpoint}?api_key=${TMDB_KEY}&language=fr-FR`).then(r => r.json()),
+          fetch(`https://api.themoviedb.org/3/${creditEndpoint}?api_key=${TMDB_KEY}`).then(r => r.json())
+        ]);
+        
+        if (isFilm) {
+          setForm({
+            title: item.title,
+            director: credits.crew?.find(c => c.job === 'Director')?.name || '',
+            year: item.release_date?.split('-')[0] || '',
+            genre: details.genres?.map(g => g.name).join(', ') || '',
+            actors: credits.cast?.slice(0, 4).map(a => a.name).join(', ') || '',
+            country: details.production_countries?.[0]?.name || '',
+            source: '',
+            watched: false,
+            poster: item.poster_path ? TMDB_IMG_SM + item.poster_path : ''
+          });
+        } else {
+          setForm({
+            title: item.name,
+            creator: details.created_by?.[0]?.name || '',
+            year: item.first_air_date?.split('-')[0] || '',
+            genre: details.genres?.map(g => g.name).join(', ') || '',
+            actors: credits.cast?.slice(0, 4).map(a => a.name).join(', ') || '',
+            country: details.origin_country?.[0] || '',
+            seasons: details.number_of_seasons || '',
+            source: '',
+            watched: false,
+            poster: item.poster_path ? TMDB_IMG_SM + item.poster_path : ''
+          });
+        }
+      } catch(e) {
+        setForm({ ...form, title: item.title || item.name, year: (item.release_date || item.first_air_date)?.split('-')[0] || '' });
       }
-      setMode('manual');
-      setResults([]);
-      setQuery('');
-    } catch(e) {
-      setForm({ ...form, title: item.title || item.name, year: (item.release_date || item.first_air_date)?.split('-')[0] || '' });
-      setMode('manual');
+    } else {
+      // Livre ou BD
+      setForm({
+        title: item.title,
+        author: item.author || '',
+        year: item.year || '',
+        genre: item.genre || '',
+        source: '',
+        watched: false,
+        poster: item.poster || ''
+      });
     }
+    setMode('manual');
+    setResults([]);
+    setQuery('');
   };
 
   const handleSubmit = (e) => {
@@ -636,11 +784,25 @@ const AddModal = ({ type, onClose, onAdd }) => {
     onClose();
   };
 
+  const getTypeLabel = () => {
+    if (isFilm) return 'un film';
+    if (isSeries) return 'une série';
+    if (isBook) return 'un livre';
+    return 'une BD';
+  };
+
+  const getIcon = () => {
+    if (isFilm) return '🎬';
+    if (isSeries) return '📺';
+    if (isBook) return '📚';
+    return '📖';
+  };
+
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal add-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-head">
-          <div className="modal-title">Ajouter {isFilm ? 'un film' : 'une série'}</div>
+          <div className="modal-title">Ajouter {getTypeLabel()}</div>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
@@ -650,7 +812,7 @@ const AddModal = ({ type, onClose, onAdd }) => {
                 <input
                   type="text"
                   className="search-box full"
-                  placeholder={`Rechercher ${isFilm ? 'un film' : 'une série'}...`}
+                  placeholder={`Rechercher ${getTypeLabel()}...`}
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   autoFocus
@@ -662,14 +824,17 @@ const AddModal = ({ type, onClose, onAdd }) => {
                 <div className="search-results">
                   {results.map(m => (
                     <div key={m.id} className="search-result" onClick={() => selectItem(m)}>
-                      {m.poster_path ? (
-                        <img src={TMDB_IMG + m.poster_path} alt="" />
+                      {(isMedia ? m.poster_path : m.poster) ? (
+                        <img src={isMedia ? TMDB_IMG_SM + m.poster_path : m.poster} alt="" />
                       ) : (
-                        <div className="no-poster">{isFilm ? '🎬' : '📺'}</div>
+                        <div className="no-poster">{getIcon()}</div>
                       )}
                       <div>
                         <div className="result-title">{m.title || m.name}</div>
-                        <div className="result-year">{(m.release_date || m.first_air_date)?.split('-')[0]}</div>
+                        <div className="result-year">
+                          {isMedia ? (m.release_date || m.first_air_date)?.split('-')[0] : m.year}
+                          {!isMedia && m.author && ` · ${m.author}`}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -697,30 +862,30 @@ const AddModal = ({ type, onClose, onAdd }) => {
                   <input type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
                 </label>
                 <label>
-                  <span>{isFilm ? 'Réalisateur' : 'Créateur'}</span>
-                  <input type="text" value={isFilm ? form.director : form.creator} onChange={e => setForm({...form, [isFilm ? 'director' : 'creator']: e.target.value})} />
+                  <span>{isFilm ? 'Réalisateur' : isSeries ? 'Créateur' : 'Auteur'}</span>
+                  <input type="text" value={isFilm ? form.director : isSeries ? form.creator : form.author} onChange={e => setForm({...form, [isFilm ? 'director' : isSeries ? 'creator' : 'author']: e.target.value})} />
                 </label>
                 <label>
                   <span>Année</span>
                   <input type="number" value={form.year} onChange={e => setForm({...form, year: e.target.value})} />
                 </label>
-                {!isFilm && (
+                {isSeries && (
                   <label>
                     <span>Saisons</span>
                     <input type="number" value={form.seasons} onChange={e => setForm({...form, seasons: e.target.value})} />
                   </label>
                 )}
-                <label className={isFilm ? 'full' : ''}>
+                <label className={isSeries ? '' : 'full'}>
                   <span>Genre</span>
-                  <input type="text" value={form.genre} onChange={e => setForm({...form, genre: e.target.value})} placeholder="Drame, Action..." />
+                  <input type="text" value={form.genre} onChange={e => setForm({...form, genre: e.target.value})} placeholder={isMedia ? 'Drame, Action...' : 'Roman, SF...'} />
                 </label>
                 <label className="full">
                   <span>Source / Reco</span>
-                  <input type="text" value={form.source} onChange={e => setForm({...form, source: e.target.value})} placeholder="Reco Dupontel..." />
+                  <input type="text" value={form.source} onChange={e => setForm({...form, source: e.target.value})} placeholder="Reco ami..." />
                 </label>
                 <label className="checkbox">
                   <input type="checkbox" checked={form.watched} onChange={e => setForm({...form, watched: e.target.checked})} />
-                  <span>Déjà vu</span>
+                  <span>{isMedia ? 'Déjà vu' : 'Déjà lu'}</span>
                 </label>
               </div>
               

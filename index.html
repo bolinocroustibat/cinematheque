@@ -57,17 +57,19 @@
     .add-btn:hover { background: #e8bc5f; }
     
     .tabs {
-      display: flex; gap: 0.5rem; margin: 0.75rem 0;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin: 0.75rem 0;
     }
     .tab {
-      flex: 1; padding: 0.6rem; background: var(--card); border: 1px solid var(--border);
-      border-radius: 8px; color: var(--text-dim); font-size: 0.8rem; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+      padding: 0.5rem; background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text-dim); font-size: 0.75rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 0.3rem;
     }
     .tab:hover { border-color: var(--text-dim); }
     .tab.active { background: var(--accent); border-color: var(--accent); color: #000; }
+    .tab-label { display: none; }
+    @media (min-width: 500px) { .tab-label { display: inline; } }
     .tab-count {
-      background: rgba(0,0,0,0.2); padding: 0.15rem 0.4rem; border-radius: 10px; font-size: 0.65rem;
+      background: rgba(0,0,0,0.2); padding: 0.1rem 0.35rem; border-radius: 10px; font-size: 0.6rem;
     }
     .tab.active .tab-count { background: rgba(0,0,0,0.3); }
     
