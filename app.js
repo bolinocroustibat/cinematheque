@@ -226,16 +226,82 @@ const App = () => {
     setSyncing(false);
   };
 
+  const [sort, setSort] = React.useState('year-desc');
+
   const genres = [...new Set(items.flatMap(f => f.genre ? f.genre.split(',').map(g => g.trim()) : []))].sort();
 
-  const filtered = items.filter(f => {
+  const sortItems = (list) => {
+    const sorted = [...list];
+    switch(sort) {
+      case 'alpha-asc':
+        return sorted.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'fr'));
+      case 'alpha-desc':
+        return sorted.sort((a, b) => (b.title || '').localeCompare(a.title || '', 'fr'));
+      case 'year-desc':
+        return sorted.sort((a, b) => (b.year || 0) - (a.year || 0));
+      case 'year-asc':
+        return sorted.sort((a, b) => (a.year || 0) - (b.year || 0));
+      case 'director':
+        return sorted.sort((a, b) => (a.director || a.creator || a.author || '').localeCompare(b.director || b.creator || b.author || '', 'fr'));
+      case 'added':
+        return sorted.sort((a, b) => (b.id || 0) - (a.id || 0));
+      case 'unwatched':
+        return sorted.sort((a, b) => {
+          if (a.watched === b.watched) return (b.year || 0) - (a.year || 0);
+          return a.watched ? 1 : -1;
+        });
+      default:
+        return sorted;
+    }
+  };
+
+  const filtered = sortItems(items.filter(f => {
     if (search && !f.title?.toLowerCase().includes(search.toLowerCase()) && 
-        !f.director?.toLowerCase().includes(search.toLowerCase())) return false;
+        !f.director?.toLowerCase().includes(search.toLowerCase()) &&
+        !f.author?.toLowerCase().includes(search.toLowerCase())) return false;
     if (filter === 'watched' && !f.watched) return false;
     if (filter === 'unwatched' && f.watched) return false;
     if (genre && !f.genre?.toLowerCase().includes(genre.toLowerCase())) return false;
     return true;
-  }).sort((a, b) => b.year - a.year);
+  }));
+
+  // Group items by separator
+  const getGroupKey = (item) => {
+    switch(sort) {
+      case 'alpha-asc':
+      case 'alpha-desc':
+        return (item.title || '')[0]?.toUpperCase() || '#';
+      case 'year-desc':
+      case 'year-asc':
+        const decade = Math.floor((item.year || 0) / 10) * 10;
+        return decade > 0 ? `${decade}s` : 'Inconnu';
+      case 'director':
+        return (item.director || item.creator || item.author || 'Inconnu')[0]?.toUpperCase() || '#';
+      case 'unwatched':
+        return item.watched ? (tab === 'books' || tab === 'comics' ? 'Lus' : 'Vus') : (tab === 'books' || tab === 'comics' ? 'À lire' : 'À voir');
+      default:
+        return null;
+    }
+  };
+
+  const groupedItems = React.useMemo(() => {
+    if (sort === 'added') return [{ key: null, items: filtered }];
+    
+    const groups = [];
+    let currentKey = null;
+    
+    filtered.forEach(item => {
+      const key = getGroupKey(item);
+      if (key !== currentKey) {
+        groups.push({ key, items: [item] });
+        currentKey = key;
+      } else {
+        groups[groups.length - 1].items.push(item);
+      }
+    });
+    
+    return groups;
+  }, [filtered, sort, tab]);
 
   const stats = { 
     total: items.length, 
@@ -369,6 +435,15 @@ const App = () => {
             <option value="">Genre</option>
             {genres.map(g => <option key={g} value={g}>{g}</option>)}
           </select>
+          <select value={sort} onChange={e => setSort(e.target.value)} className="sort-select">
+            <option value="year-desc">Année ↓</option>
+            <option value="year-asc">Année ↑</option>
+            <option value="alpha-asc">A → Z</option>
+            <option value="alpha-desc">Z → A</option>
+            <option value="director">{tab === 'films' ? 'Réalisateur' : tab === 'series' ? 'Créateur' : 'Auteur'}</option>
+            <option value="added">Ajout récent</option>
+            <option value="unwatched">{tab === 'books' || tab === 'comics' ? 'Non lus d\'abord' : 'Non vus d\'abord'}</option>
+          </select>
           <div className="view-controls">
             <button className={`view-btn ${view === 'grid' ? 'active' : ''}`} onClick={() => setView('grid')}>▦</button>
             <button className={`view-btn ${view === 'list' ? 'active' : ''}`} onClick={() => setView('list')}>☰</button>
@@ -383,55 +458,69 @@ const App = () => {
         <div className="count">{filtered.length} {tab}</div>
         {filtered.length > 0 ? (
           view === 'grid' ? (
-            <div className="grid" style={{'--card-size': cardSize + 'px'}}>
-              {filtered.map(f => (
-                <div key={f.id} className="card" onClick={() => setSelected(f)}>
-                  {f.poster ? (
-                    <>
-                      <img className="card-img" src={getSmallPoster(f.poster)} alt={f.title} loading="lazy" />
-                      <div className="card-info">
-                        <div className="card-title">{f.title}</div>
-                        <div className="card-year">{f.year}</div>
+            <div className="grid-container">
+              {groupedItems.map((group, gi) => (
+                <React.Fragment key={gi}>
+                  {group.key && <div className="group-separator">{group.key}</div>}
+                  <div className="grid" style={{'--card-size': cardSize + 'px'}}>
+                    {group.items.map(f => (
+                      <div key={f.id} className="card" onClick={() => setSelected(f)}>
+                        {f.poster ? (
+                          <>
+                            <img className="card-img" src={getSmallPoster(f.poster)} alt={f.title} loading="lazy" />
+                            <div className="card-info">
+                              <div className="card-title">{f.title}</div>
+                              <div className="card-year">{f.year}</div>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="card-noimg">
+                            <div className="card-title">{f.title}</div>
+                            <div className="card-year">{f.year}</div>
+                          </div>
+                        )}
+                        <div 
+                          className={`watch-btn ${f.watched ? 'watched' : ''}`} 
+                          onClick={e => toggleWatch(f.id, e)}
+                        >✓</div>
                       </div>
-                    </>
-                  ) : (
-                    <div className="card-noimg">
-                      <div className="card-title">{f.title}</div>
-                      <div className="card-year">{f.year}</div>
-                    </div>
-                  )}
-                  <div 
-                    className={`watch-btn ${f.watched ? 'watched' : ''}`} 
-                    onClick={e => toggleWatch(f.id, e)}
-                  >✓</div>
-                </div>
+                    ))}
+                  </div>
+                </React.Fragment>
               ))}
             </div>
           ) : (
-            <div className="list">
-              {filtered.map(f => (
-                <div key={f.id} className="list-item" onClick={() => setSelected(f)}>
-                  {f.poster ? (
-                    <img className="list-poster" src={getSmallPoster(f.poster)} alt="" loading="lazy" />
-                  ) : (
-                    <div className="list-poster-empty">{tab === 'films' ? '🎬' : '📺'}</div>
-                  )}
-                  <div className="list-info">
-                    <div className="list-title">{f.title}</div>
-                    <div className="list-meta">{f.director || f.creator} · {f.year}</div>
+            <div className="list-container">
+              {groupedItems.map((group, gi) => (
+                <React.Fragment key={gi}>
+                  {group.key && <div className="group-separator">{group.key}</div>}
+                  <div className="list">
+                    {group.items.map(f => (
+                      <div key={f.id} className="list-item" onClick={() => setSelected(f)}>
+                        {f.poster ? (
+                          <img className="list-poster" src={getSmallPoster(f.poster)} alt="" loading="lazy" />
+                        ) : (
+                          <div className="list-poster-empty">{tab === 'films' ? '🎬' : tab === 'series' ? '📺' : tab === 'books' ? '📚' : '📖'}</div>
+                        )}
+                        <div className="list-info">
+                          <div className="list-title">{f.title}</div>
+                          <div className="list-meta">{f.director || f.creator || f.author} · {f.year}</div>
+                        </div>
+                        <div 
+                          className={`watch-btn ${f.watched ? 'watched' : ''}`} 
+                          onClick={e => toggleWatch(f.id, e)}
+                        >✓</div>
+                      </div>
+                    ))}
                   </div>
-                  <div 
-                    className={`watch-btn ${f.watched ? 'watched' : ''}`} 
-                    onClick={e => toggleWatch(f.id, e)}
-                  >✓</div>
-                </div>
+                </React.Fragment>
               ))}
             </div>
           )
         ) : (
           <div className="empty">
             {items.length === 0 
-              ? `Aucun ${tab === 'films' ? 'film' : 'série'} ajouté. Clique sur "+ Ajouter" !`
+              ? `Aucun ${tab === 'films' ? 'film' : tab === 'series' ? 'série' : tab === 'books' ? 'livre' : 'BD'} ajouté. Clique sur "+ Ajouter" !`
               : 'Aucun résultat'
             }
           </div>
