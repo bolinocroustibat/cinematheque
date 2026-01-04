@@ -486,7 +486,7 @@ const App = () => {
                     {group.key && <div className="group-separator">{group.key}</div>}
                     <div className="grid" style={{'--card-size': cardSize + 'px'}}>
                       {group.items.map(f => (
-                        <div key={f.id} className="card" onClick={() => setSelected(f)}>
+                        <div key={f.id} className={`card ${f.watched ? 'is-watched' : 'is-unwatched'}`} onClick={() => setSelected(f)}>
                           {f.poster ? (
                             <>
                               <img className="card-img" src={getSmallPoster(f.poster)} alt={f.title} loading="lazy" />
@@ -513,7 +513,7 @@ const App = () => {
               ) : (
                 <div className="grid" style={{'--card-size': cardSize + 'px'}}>
                   {filtered.map(f => (
-                    <div key={f.id} className="card" onClick={() => setSelected(f)}>
+                    <div key={f.id} className={`card ${f.watched ? 'is-watched' : 'is-unwatched'}`} onClick={() => setSelected(f)}>
                       {f.poster ? (
                         <>
                           <img className="card-img" src={getSmallPoster(f.poster)} alt={f.title} loading="lazy" />
@@ -545,7 +545,7 @@ const App = () => {
                     {group.key && <div className="group-separator">{group.key}</div>}
                     <div className="list">
                       {group.items.map(f => (
-                        <div key={f.id} className="list-item" onClick={() => setSelected(f)}>
+                        <div key={f.id} className={`list-item ${f.watched ? 'is-watched' : 'is-unwatched'}`} onClick={() => setSelected(f)}>
                           {f.poster ? (
                             <img className="list-poster" src={getSmallPoster(f.poster)} alt="" loading="lazy" />
                           ) : (
@@ -567,7 +567,7 @@ const App = () => {
               ) : (
                 <div className="list">
                   {filtered.map(f => (
-                    <div key={f.id} className="list-item" onClick={() => setSelected(f)}>
+                    <div key={f.id} className={`list-item ${f.watched ? 'is-watched' : 'is-unwatched'}`} onClick={() => setSelected(f)}>
                       {f.poster ? (
                         <img className="list-poster" src={getSmallPoster(f.poster)} alt="" loading="lazy" />
                       ) : (
