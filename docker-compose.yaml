@@ -1,0 +1,10 @@
+services:
+  frontend:
+    container_name: cinematheque
+    image: ghcr.io/bolinocroustibat/cinematheque:${TAG:-latest}
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      - VITE_ENV=${VITE_ENV}
