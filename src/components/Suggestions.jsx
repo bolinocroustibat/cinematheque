@@ -6,8 +6,6 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 	const [loading, setLoading] = useState(false)
 
 	const isMedia = type === "films" || type === "series"
-	const TMDB_KEY = import.meta.env.VITE_TMDB_KEY || ""
-	const TMDB_IMG_SM = "https://image.tmdb.org/t/p/w154"
 
 	useEffect(() => {
 		const fetchSuggestions = async () => {
@@ -17,24 +15,21 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 			try {
 				if (isMedia) {
 					// TMDB pour films/séries
-					const endpoint = type === "films" ? "search/movie" : "search/tv"
-					const searchRes = await fetch(
-						`${TMDB_BASE_URL}/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(item.title)}&year=${item.year}`,
+					const searchResults = await searchTMDB(
+						item.title,
+						type === "films" ? "movie" : "tv",
+						{ year: item.year },
 					)
-					const searchData = await searchRes.json()
 
-					if (searchData.results?.[0]) {
-						const id = searchData.results[0].id
-						const recEndpoint =
-							type === "films"
-								? `movie/${id}/recommendations`
-								: `tv/${id}/recommendations`
-						const recRes = await fetch(
-							`${TMDB_BASE_URL}/${recEndpoint}?api_key=${TMDB_KEY}&language=fr-FR`,
+					if (searchResults[0]) {
+						const id = searchResults[0].id
+						const recommendations = await getRecommendations(
+							id,
+							type === "films" ? "movie" : "tv",
+							{ language: "fr-FR" },
 						)
-						const recData = await recRes.json()
 
-						const filtered = (recData.results || [])
+						const filtered = recommendations
 							.filter(
 								(r) =>
 									!existingIds.includes(
@@ -46,7 +41,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 								id: r.id,
 								title: r.title || r.name,
 								year: (r.release_date || r.first_air_date)?.split("-")[0],
-								poster: r.poster_path ? TMDB_IMG_SM + r.poster_path : null,
+								poster: getPosterUrl(r.poster_path),
 								source: "tmdb",
 							}))
 
@@ -118,19 +113,13 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 		try {
 			if (sug.source === "tmdb") {
 				// Ajout film/série depuis TMDB
-				const endpoint = type === "films" ? `movie/${sug.id}` : `tv/${sug.id}`
-				const creditEndpoint =
-					type === "films" ? `movie/${sug.id}/credits` : `tv/${sug.id}/credits`
+				const { details, credits } = await getDetailsWithCredits(
+					sug.id,
+					type === "films" ? "movie" : "tv",
+					{ language: "fr-FR" },
+				)
 
-				const TMDB_KEY = import.meta.env.VITE_TMDB_KEY || ""
-				const [details, credits] = await Promise.all([
-					fetch(
-						`${TMDB_BASE_URL}/${endpoint}?api_key=${TMDB_KEY}&language=fr-FR`,
-					).then((r) => r.json()),
-					fetch(`${TMDB_BASE_URL}/${creditEndpoint}?api_key=${TMDB_KEY}`).then(
-						(r) => r.json(),
-					),
-				])
+				if (!details || !credits) return
 
 				const newItem = {
 					id: Date.now(),

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react"
-import { TMDB_BASE_URL } from "@/api/tmdb.js"
 
 const FixPosterModal = ({ item, type, onClose, onSelect }) => {
 	const [query, setQuery] = useState(item.title)
@@ -15,26 +14,23 @@ const FixPosterModal = ({ item, type, onClose, onSelect }) => {
 		setSearching(true)
 		setResults([])
 
-		const TMDB_KEY = import.meta.env.VITE_TMDB_KEY || ""
-		const TMDB_IMG_SM = "https://image.tmdb.org/t/p/w154"
 		const OMDB_KEY = import.meta.env.VITE_OMDB_KEY || ""
 
 		if (source === "tmdb") {
-			const endpoint = type === "films" ? "search/movie" : "search/tv"
-			const yearParam = year ? `&year=${year}` : ""
 			try {
-				const res = await fetch(
-					`${TMDB_BASE_URL}/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}${yearParam}`,
+				const results = await searchTMDB(
+					query,
+					type === "films" ? "movie" : "tv",
+					{ year },
 				)
-				const data = await res.json()
 				setResults(
-					data.results?.slice(0, 12).map((m) => ({
+					results.slice(0, 12).map((m) => ({
 						id: m.id,
 						title: m.title || m.name,
 						year: (m.release_date || m.first_air_date)?.split("-")[0],
-						poster: m.poster_path ? TMDB_IMG_SM + m.poster_path : null,
+						poster: getPosterUrl(m.poster_path),
 						source: "TMDB",
-					})) || [],
+					})),
 				)
 			} catch (_e) {}
 		} else {

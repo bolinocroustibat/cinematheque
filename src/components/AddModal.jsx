@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { TMDB_BASE_URL } from "@/api/tmdb.js"
+import { getDetailsWithCredits, getPosterUrl, searchTMDB } from "@/api/tmdb.js"
 
 const AddModal = ({ type, onClose, onAdd }) => {
 	const [query, setQuery] = useState("")
@@ -37,13 +37,10 @@ const AddModal = ({ type, onClose, onAdd }) => {
 			setSearching(true)
 			try {
 				if (isMedia) {
-					const TMDB_KEY = import.meta.env.VITE_TMDB_KEY || ""
-					const endpoint = isFilm ? "search/movie" : "search/tv"
-					const res = await fetch(
-						`${TMDB_BASE_URL}/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=fr-FR`,
-					)
-					const data = await res.json()
-					setResults(data.results?.slice(0, 8) || [])
+					const results = await searchTMDB(query, isFilm ? "movie" : "tv", {
+						language: "fr-FR",
+					})
+					setResults(results.slice(0, 8))
 				} else {
 					// Google Books API pour livres et BD
 					const res = await fetch(
@@ -75,21 +72,21 @@ const AddModal = ({ type, onClose, onAdd }) => {
 	const selectItem = async (item) => {
 		if (isMedia) {
 			try {
-				const TMDB_KEY = import.meta.env.VITE_TMDB_KEY || ""
-				const TMDB_IMG_SM = "https://image.tmdb.org/t/p/w154"
-				const detailEndpoint = isFilm ? `movie/${item.id}` : `tv/${item.id}`
-				const creditEndpoint = isFilm
-					? `movie/${item.id}/credits`
-					: `tv/${item.id}/credits`
+				const { details, credits } = await getDetailsWithCredits(
+					item.id,
+					isFilm ? "movie" : "tv",
+					{ language: "fr-FR" },
+				)
 
-				const [details, credits] = await Promise.all([
-					fetch(
-						`${TMDB_BASE_URL}/${detailEndpoint}?api_key=${TMDB_KEY}&language=fr-FR`,
-					).then((r) => r.json()),
-					fetch(`${TMDB_BASE_URL}/${creditEndpoint}?api_key=${TMDB_KEY}`).then(
-						(r) => r.json(),
-					),
-				])
+				if (!details || !credits) {
+					setForm({
+						...form,
+						title: item.title || item.name,
+						year:
+							(item.release_date || item.first_air_date)?.split("-")[0] || "",
+					})
+					return
+				}
 
 				if (isFilm) {
 					setForm({
@@ -106,7 +103,7 @@ const AddModal = ({ type, onClose, onAdd }) => {
 						country: details.production_countries?.[0]?.name || "",
 						source: "",
 						watched: false,
-						poster: item.poster_path ? TMDB_IMG_SM + item.poster_path : "",
+						poster: getPosterUrl(item.poster_path) || "",
 					})
 				} else {
 					setForm({
@@ -123,7 +120,7 @@ const AddModal = ({ type, onClose, onAdd }) => {
 						seasons: details.number_of_seasons || "",
 						source: "",
 						watched: false,
-						poster: item.poster_path ? TMDB_IMG_SM + item.poster_path : "",
+						poster: getPosterUrl(item.poster_path) || "",
 					})
 				}
 			} catch (_e) {
