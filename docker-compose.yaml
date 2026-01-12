@@ -2,7 +2,12 @@ services:
   frontend:
     container_name: cinematheque
     image: ghcr.io/bolinocroustibat/cinematheque:${TAG:-latest}
-    build: .
+    build:
+      context: .
+      args:
+        - VITE_TMDB_KEY=${VITE_TMDB_KEY}
+        - VITE_OMDB_KEY=${VITE_OMDB_KEY}
+        - VITE_SHEETS_API=${VITE_SHEETS_API}
     restart: unless-stopped
     ports:
       - "${APP_PORT:-3000}:3000"

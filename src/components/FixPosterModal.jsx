@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
-import { OMDB_KEY, TMDB_IMG_SM, TMDB_KEY } from "@/constants.js"
+import { TMDB_BASE_URL } from "@/api/tmdb.js"
 
 const FixPosterModal = ({ item, type, onClose, onSelect }) => {
 	const [query, setQuery] = useState(item.title)
@@ -15,12 +15,16 @@ const FixPosterModal = ({ item, type, onClose, onSelect }) => {
 		setSearching(true)
 		setResults([])
 
+		const TMDB_KEY = import.meta.env.VITE_TMDB_KEY || ""
+		const TMDB_IMG_SM = "https://image.tmdb.org/t/p/w154"
+		const OMDB_KEY = import.meta.env.VITE_OMDB_KEY || ""
+
 		if (source === "tmdb") {
 			const endpoint = type === "films" ? "search/movie" : "search/tv"
 			const yearParam = year ? `&year=${year}` : ""
 			try {
 				const res = await fetch(
-					`https://api.themoviedb.org/3/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}${yearParam}`,
+					`${TMDB_BASE_URL}/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}${yearParam}`,
 				)
 				const data = await res.json()
 				setResults(

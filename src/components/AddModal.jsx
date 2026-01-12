@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { TMDB_IMG_SM, TMDB_KEY } from "@/constants.js"
+import { TMDB_BASE_URL } from "@/api/tmdb.js"
 
 const AddModal = ({ type, onClose, onAdd }) => {
 	const [query, setQuery] = useState("")
@@ -37,9 +37,11 @@ const AddModal = ({ type, onClose, onAdd }) => {
 			setSearching(true)
 			try {
 				if (isMedia) {
+					const TMDB_KEY = import.meta.env.VITE_TMDB_KEY || ""
+					const TMDB_IMG_SM = "https://image.tmdb.org/t/p/w154"
 					const endpoint = isFilm ? "search/movie" : "search/tv"
 					const res = await fetch(
-						`https://api.themoviedb.org/3/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=fr-FR`,
+						`${TMDB_BASE_URL}/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=fr-FR`,
 					)
 					const data = await res.json()
 					setResults(data.results?.slice(0, 8) || [])
@@ -74,6 +76,8 @@ const AddModal = ({ type, onClose, onAdd }) => {
 	const selectItem = async (item) => {
 		if (isMedia) {
 			try {
+				const TMDB_KEY = import.meta.env.VITE_TMDB_KEY || ""
+				const TMDB_IMG_SM = "https://image.tmdb.org/t/p/w154"
 				const detailEndpoint = isFilm ? `movie/${item.id}` : `tv/${item.id}`
 				const creditEndpoint = isFilm
 					? `movie/${item.id}/credits`
@@ -81,10 +85,10 @@ const AddModal = ({ type, onClose, onAdd }) => {
 
 				const [details, credits] = await Promise.all([
 					fetch(
-						`https://api.themoviedb.org/3/${detailEndpoint}?api_key=${TMDB_KEY}&language=fr-FR`,
+						`${TMDB_BASE_URL}/${detailEndpoint}?api_key=${TMDB_KEY}&language=fr-FR`,
 					).then((r) => r.json()),
 					fetch(
-						`https://api.themoviedb.org/3/${creditEndpoint}?api_key=${TMDB_KEY}`,
+						`${TMDB_BASE_URL}/${creditEndpoint}?api_key=${TMDB_KEY}`,
 					).then((r) => r.json()),
 				])
 
@@ -206,7 +210,11 @@ const AddModal = ({ type, onClose, onAdd }) => {
 										>
 											{(isMedia ? m.poster_path : m.poster) ? (
 												<img
-													src={isMedia ? TMDB_IMG_SM + m.poster_path : m.poster}
+													src={
+														isMedia
+															? "https://image.tmdb.org/t/p/w154" + m.poster_path
+															: m.poster
+													}
 													alt=""
 												/>
 											) : (

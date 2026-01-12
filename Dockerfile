@@ -11,6 +11,16 @@ RUN bun install --frozen-lockfile
 # Copy source files
 COPY . .
 
+# Build arguments for environment variables
+ARG VITE_TMDB_KEY
+ARG VITE_OMDB_KEY
+ARG VITE_SHEETS_API
+
+# Set environment variables for build
+ENV VITE_TMDB_KEY=${VITE_TMDB_KEY}
+ENV VITE_OMDB_KEY=${VITE_OMDB_KEY}
+ENV VITE_SHEETS_API=${VITE_SHEETS_API}
+
 # Build the application (Vite outputs to dist/)
 RUN bun run build
 

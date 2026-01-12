@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react"
-import { TMDB_IMG_SM, TMDB_KEY } from "@/constants.js"
+import { TMDB_BASE_URL } from "@/api/tmdb.js"
 
 const Suggestions = ({ item, type, existingIds, onAdd }) => {
 	const [suggestions, setSuggestions] = useState([])
 	const [loading, setLoading] = useState(false)
 
 	const isMedia = type === "films" || type === "series"
+	const TMDB_KEY = import.meta.env.VITE_TMDB_KEY || ""
+	const TMDB_IMG_SM = "https://image.tmdb.org/t/p/w154"
 
 	useEffect(() => {
 		const fetchSuggestions = async () => {
@@ -17,7 +19,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 					// TMDB pour films/séries
 					const endpoint = type === "films" ? "search/movie" : "search/tv"
 					const searchRes = await fetch(
-						`https://api.themoviedb.org/3/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(item.title)}&year=${item.year}`,
+						`${TMDB_BASE_URL}/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(item.title)}&year=${item.year}`,
 					)
 					const searchData = await searchRes.json()
 
@@ -28,7 +30,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 								? `movie/${id}/recommendations`
 								: `tv/${id}/recommendations`
 						const recRes = await fetch(
-							`https://api.themoviedb.org/3/${recEndpoint}?api_key=${TMDB_KEY}&language=fr-FR`,
+							`${TMDB_BASE_URL}/${recEndpoint}?api_key=${TMDB_KEY}&language=fr-FR`,
 						)
 						const recData = await recRes.json()
 
@@ -120,12 +122,13 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 				const creditEndpoint =
 					type === "films" ? `movie/${sug.id}/credits` : `tv/${sug.id}/credits`
 
+				const TMDB_KEY = import.meta.env.VITE_TMDB_KEY || ""
 				const [details, credits] = await Promise.all([
 					fetch(
-						`https://api.themoviedb.org/3/${endpoint}?api_key=${TMDB_KEY}&language=fr-FR`,
+						`${TMDB_BASE_URL}/${endpoint}?api_key=${TMDB_KEY}&language=fr-FR`,
 					).then((r) => r.json()),
 					fetch(
-						`https://api.themoviedb.org/3/${creditEndpoint}?api_key=${TMDB_KEY}`,
+						`${TMDB_BASE_URL}/${creditEndpoint}?api_key=${TMDB_KEY}`,
 					).then((r) => r.json()),
 				])
 

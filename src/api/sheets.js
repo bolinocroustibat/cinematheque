@@ -1,6 +1,5 @@
-import { SHEETS_API } from "@/constants.js"
-
 export const loadFromSheets = async () => {
+	const SHEETS_API = import.meta.env.VITE_SHEETS_API || ""
 	const res = await fetch(SHEETS_API)
 	const data = await res.json()
 

@@ -30,6 +30,15 @@ APP_PORT=8080 docker compose up -d
 TAG=v1.0.0 docker compose up -d
 ```
 
+**Environment Variables for Docker:**
+
+Create a `.env` file in the project root with your API keys (see [Environment Variables](#environment-variables) section). Docker Compose will automatically load variables from the `.env` file and pass them to the build process.
+
+The required variables are:
+- `VITE_TMDB_KEY` - Your TMDB API key
+- `VITE_OMDB_KEY` - Your OMDb API key (optional)
+- `VITE_SHEETS_API` - Your Google Sheets API URL
+
 ### Useful Docker Commands
 
 ```bash
@@ -51,6 +60,20 @@ docker compose restart
 ### Prerequisites
 - Node.js 18+ or Bun
 - pnpm, npm, yarn, or bun
+
+### Environment Variables
+
+Before running the application, you need to configure your environment variables:
+
+1. Copy the example environment file:
+```bash
+cp .env.example .env
+```
+
+2. Edit `.env` and fill in your API keys:
+   - **VITE_TMDB_KEY**: Get your API key from [TMDB Settings](https://www.themoviedb.org/settings/api)
+   - **VITE_OMDB_KEY**: Get your API key from [OMDb API](https://www.omdbapi.com/apikey.aspx) (optional, used as fallback for movie posters)
+   - **VITE_SHEETS_API**: Your Google Apps Script Web App URL
 
 ### Installation
 
