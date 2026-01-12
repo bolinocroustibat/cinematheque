@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react"
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react"
 import {
 	loadFromSheets as loadFromSheetsAPI,
 	saveToSheets as saveToSheetsAPI,
@@ -60,40 +60,8 @@ const App = () => {
 
 	const [posterProgress, setPosterProgress] = useState("")
 
-	// Load from Google Sheets on mount
-	useEffect(() => {
-		const cached = localStorage.getItem("cine_films_cache")
-		if (!cached) setLoading(true)
-		loadFromSheets()
-	}, [loadFromSheets])
-
-	// Save to cache whenever data changes
-	useEffect(() => {
-		if (films.length > 0) {
-			localStorage.setItem("cine_films_cache", JSON.stringify(films))
-		}
-	}, [films])
-
-	useEffect(() => {
-		if (series.length > 0) {
-			localStorage.setItem("cine_series_cache", JSON.stringify(series))
-		}
-	}, [series])
-
-	useEffect(() => {
-		if (books.length > 0) {
-			localStorage.setItem("cine_books_cache", JSON.stringify(books))
-		}
-	}, [books])
-
-	useEffect(() => {
-		if (comics.length > 0) {
-			localStorage.setItem("cine_comics_cache", JSON.stringify(comics))
-		}
-	}, [comics])
-
 	// Fetch missing posters after loading
-	const fetchMissingPosters = async (filmsList) => {
+	const fetchMissingPosters = useCallback(async (filmsList) => {
 		const needPoster = filmsList.filter((f) => !f.poster)
 		if (needPoster.length === 0) return filmsList
 
@@ -117,9 +85,9 @@ const App = () => {
 
 		setPosterProgress("")
 		return updated
-	}
+	}, [])
 
-	const loadFromSheets = async () => {
+	const loadFromSheets = useCallback(async () => {
 		setSyncing(true)
 		try {
 			const { loadedFilms, loadedSeries, loadedBooks, loadedComics } =
@@ -153,7 +121,39 @@ const App = () => {
 			setSyncing(false)
 			setLoading(false)
 		}
-	}
+	}, [fetchMissingPosters])
+
+	// Load from Google Sheets on mount
+	useEffect(() => {
+		const cached = localStorage.getItem("cine_films_cache")
+		if (!cached) setLoading(true)
+		loadFromSheets()
+	}, [loadFromSheets])
+
+	// Save to cache whenever data changes
+	useEffect(() => {
+		if (films.length > 0) {
+			localStorage.setItem("cine_films_cache", JSON.stringify(films))
+		}
+	}, [films])
+
+	useEffect(() => {
+		if (series.length > 0) {
+			localStorage.setItem("cine_series_cache", JSON.stringify(series))
+		}
+	}, [series])
+
+	useEffect(() => {
+		if (books.length > 0) {
+			localStorage.setItem("cine_books_cache", JSON.stringify(books))
+		}
+	}, [books])
+
+	useEffect(() => {
+		if (comics.length > 0) {
+			localStorage.setItem("cine_comics_cache", JSON.stringify(comics))
+		}
+	}, [comics])
 
 	const saveToSheets = async (newFilms, newSeries, newBooks, newComics) => {
 		setSyncing(true)
