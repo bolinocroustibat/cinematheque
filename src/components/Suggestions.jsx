@@ -127,9 +127,9 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 					fetch(
 						`${TMDB_BASE_URL}/${endpoint}?api_key=${TMDB_KEY}&language=fr-FR`,
 					).then((r) => r.json()),
-					fetch(
-						`${TMDB_BASE_URL}/${creditEndpoint}?api_key=${TMDB_KEY}`,
-					).then((r) => r.json()),
+					fetch(`${TMDB_BASE_URL}/${creditEndpoint}?api_key=${TMDB_KEY}`).then(
+						(r) => r.json(),
+					),
 				])
 
 				const newItem = {

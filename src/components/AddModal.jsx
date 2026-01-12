@@ -38,7 +38,6 @@ const AddModal = ({ type, onClose, onAdd }) => {
 			try {
 				if (isMedia) {
 					const TMDB_KEY = import.meta.env.VITE_TMDB_KEY || ""
-					const TMDB_IMG_SM = "https://image.tmdb.org/t/p/w154"
 					const endpoint = isFilm ? "search/movie" : "search/tv"
 					const res = await fetch(
 						`${TMDB_BASE_URL}/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=fr-FR`,
@@ -87,9 +86,9 @@ const AddModal = ({ type, onClose, onAdd }) => {
 					fetch(
 						`${TMDB_BASE_URL}/${detailEndpoint}?api_key=${TMDB_KEY}&language=fr-FR`,
 					).then((r) => r.json()),
-					fetch(
-						`${TMDB_BASE_URL}/${creditEndpoint}?api_key=${TMDB_KEY}`,
-					).then((r) => r.json()),
+					fetch(`${TMDB_BASE_URL}/${creditEndpoint}?api_key=${TMDB_KEY}`).then(
+						(r) => r.json(),
+					),
 				])
 
 				if (isFilm) {
@@ -212,7 +211,8 @@ const AddModal = ({ type, onClose, onAdd }) => {
 												<img
 													src={
 														isMedia
-															? "https://image.tmdb.org/t/p/w154" + m.poster_path
+															? "https://image.tmdb.org/t/p/w154" +
+																m.poster_path
 															: m.poster
 													}
 													alt=""
