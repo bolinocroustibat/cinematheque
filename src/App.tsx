@@ -573,6 +573,7 @@ const App = () => {
 															<div className="card-year">{f.year}</div>
 														</div>
 													)}
+													{/* biome-ignore lint/a11y/useSemanticElements: styled watch button */}
 													<div
 														className={`watch-btn ${f.watched ? "watched" : ""}`}
 														onClick={(e) => toggleWatch(f.id, e)}
@@ -621,6 +622,7 @@ const App = () => {
 													<div className="card-year">{f.year}</div>
 												</div>
 											)}
+											{/* biome-ignore lint/a11y/useSemanticElements: styled watch button */}
 											<div
 												className={`watch-btn ${f.watched ? "watched" : ""}`}
 												onClick={(e) => toggleWatch(f.id, e)}
@@ -671,6 +673,7 @@ const App = () => {
 															· {f.year}
 														</div>
 													</div>
+													{/* biome-ignore lint/a11y/useSemanticElements: styled watch button */}
 													<div
 														className={`watch-btn ${f.watched ? "watched" : ""}`}
 														onClick={(e) => toggleWatch(f.id, e)}
@@ -714,6 +717,7 @@ const App = () => {
 													· {f.year}
 												</div>
 											</div>
+											{/* biome-ignore lint/a11y/useSemanticElements: styled watch button */}
 											<div
 												className={`watch-btn ${f.watched ? "watched" : ""}`}
 												onClick={(e) => toggleWatch(f.id, e)}
