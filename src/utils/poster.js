@@ -1,4 +1,4 @@
-import { TMDB_IMG_SM, TMDB_IMG_LG } from "@/api/tmdb.js"
+import { TMDB_IMG_LG, TMDB_IMG_SM } from "@/api/tmdb.js"
 
 // Helper to get poster URL from TMDB poster path
 export const getPosterUrl = (posterPath, size = "sm") => {

@@ -350,7 +350,11 @@ const App = () => {
 									: "vu"}
 							{syncing && <span className="sync-icon"> ⟳</span>}
 						</div>
-						<button className="add-btn" onClick={() => setShowAdd(true)}>
+						<button
+							type="button"
+							className="add-btn"
+							onClick={() => setShowAdd(true)}
+						>
 							+ Ajouter
 						</button>
 					</div>
@@ -364,6 +368,7 @@ const App = () => {
 
 				<div className="tabs">
 					<button
+						type="button"
 						className={`tab ${tab === "films" ? "active" : ""}`}
 						onClick={() => {
 							setTab("films")
@@ -373,6 +378,7 @@ const App = () => {
 						Films <span className="tab-count">{films.length}</span>
 					</button>
 					<button
+						type="button"
 						className={`tab ${tab === "series" ? "active" : ""}`}
 						onClick={() => {
 							setTab("series")
@@ -382,6 +388,7 @@ const App = () => {
 						Séries <span className="tab-count">{series.length}</span>
 					</button>
 					<button
+						type="button"
 						className={`tab ${tab === "books" ? "active" : ""}`}
 						onClick={() => {
 							setTab("books")
@@ -391,6 +398,7 @@ const App = () => {
 						Livres <span className="tab-count">{books.length}</span>
 					</button>
 					<button
+						type="button"
 						className={`tab ${tab === "comics" ? "active" : ""}`}
 						onClick={() => {
 							setTab("comics")
@@ -410,18 +418,21 @@ const App = () => {
 					/>
 					<div className="filter-divider"></div>
 					<button
+						type="button"
 						className={`filter-btn ${filter === "all" ? "active" : ""}`}
 						onClick={() => setFilter("all")}
 					>
 						Tous
 					</button>
 					<button
+						type="button"
 						className={`filter-btn ${filter === "unwatched" ? "active" : ""}`}
 						onClick={() => setFilter("unwatched")}
 					>
 						{tab === "books" || tab === "comics" ? "À lire" : "À voir"}
 					</button>
 					<button
+						type="button"
 						className={`filter-btn ${filter === "watched" ? "active" : ""}`}
 						onClick={() => setFilter("watched")}
 					>
@@ -459,18 +470,21 @@ const App = () => {
 					</select>
 					<div className="view-controls">
 						<button
+							type="button"
 							className={`view-btn ${view === "grid" ? "active" : ""}`}
 							onClick={() => setView("grid")}
 						>
 							▦
 						</button>
 						<button
+							type="button"
 							className={`view-btn ${view === "list" ? "active" : ""}`}
 							onClick={() => setView("list")}
 						>
 							☰
 						</button>
 						<button
+							type="button"
 							className={`view-btn ${showSeparators ? "active" : ""}`}
 							onClick={() => setShowSeparators(!showSeparators)}
 							title="Séparateurs"
@@ -499,8 +513,8 @@ const App = () => {
 					view === "grid" ? (
 						<div className={showSeparators ? "grid-container" : ""}>
 							{showSeparators ? (
-								groupedItems.map((group, gi) => (
-									<Fragment key={gi}>
+								groupedItems.map((group) => (
+									<Fragment key={group.key ?? "all"}>
 										{group.key && (
 											<div className="group-separator">{group.key}</div>
 										)}
@@ -588,8 +602,8 @@ const App = () => {
 					) : (
 						<div className={showSeparators ? "list-container" : ""}>
 							{showSeparators ? (
-								groupedItems.map((group, gi) => (
-									<Fragment key={gi}>
+								groupedItems.map((group) => (
+									<Fragment key={group.key ?? "all"}>
 										{group.key && (
 											<div className="group-separator">{group.key}</div>
 										)}

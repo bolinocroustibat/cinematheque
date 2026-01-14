@@ -179,7 +179,7 @@ const AddModal = ({ type, onClose, onAdd }) => {
 			<div className="modal add-modal" onClick={(e) => e.stopPropagation()}>
 				<div className="modal-head">
 					<div className="modal-title">Ajouter {getTypeLabel()}</div>
-					<button className="modal-close" onClick={onClose}>
+					<button type="button" className="modal-close" onClick={onClose}>
 						×
 					</button>
 				</div>
@@ -234,7 +234,11 @@ const AddModal = ({ type, onClose, onAdd }) => {
 								</div>
 							)}
 
-							<button className="link-btn" onClick={() => setMode("manual")}>
+							<button
+								type="button"
+								className="link-btn"
+								onClick={() => setMode("manual")}
+							>
 								Ou ajouter manuellement →
 							</button>
 						</>
