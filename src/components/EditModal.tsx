@@ -49,9 +49,7 @@ const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
 		onSave(item.id, {
 			...form,
 			year: parseInt(String(form.year), 10) || item.year,
-			seasons: form.seasons
-				? parseInt(String(form.seasons), 10)
-				: undefined,
+			seasons: form.seasons ? parseInt(String(form.seasons), 10) : undefined,
 			rating: form.rating || undefined,
 		} as Partial<Item>)
 	}
