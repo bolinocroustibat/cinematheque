@@ -4,7 +4,7 @@ import {
 	saveToSheets as saveToSheetsAPI,
 } from "@/api/sheets.js"
 import { fetchPoster } from "@/api/tmdb"
-import AddModal from "@/components/AddModal.jsx"
+import AddModal from "@/components/AddModal"
 import EditModal from "@/components/EditModal"
 import FixPosterModal from "@/components/FixPosterModal"
 import ItemModal from "@/components/ItemModal"

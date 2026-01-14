@@ -1,12 +1,48 @@
 import { useEffect, useRef, useState } from "react"
-import { getDetailsWithCredits, searchTMDB } from "@/api/tmdb"
+import { getDetailsWithCredits, searchTMDB, TMDB_IMG_SM } from "@/api/tmdb"
+import type { Item, TabType } from "@/types"
 import { getPosterUrl } from "@/utils/poster"
 
-const AddModal = ({ type, onClose, onAdd }) => {
+interface AddModalProps {
+	type: TabType
+	onClose: () => void
+	onAdd: (item: Item) => void
+}
+
+interface FormState {
+	title: string
+	director: string
+	creator: string
+	author: string
+	year: string
+	genre: string
+	source: string
+	watched: boolean
+	poster: string
+	seasons: string
+	actors?: string
+	country?: string
+}
+
+// Search result from either TMDB or Google Books
+interface SearchResult {
+	id: string | number
+	title?: string
+	name?: string
+	poster_path?: string | null
+	poster?: string | null
+	release_date?: string
+	first_air_date?: string
+	year?: string
+	author?: string
+	genre?: string
+}
+
+const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 	const [query, setQuery] = useState("")
-	const [results, setResults] = useState([])
+	const [results, setResults] = useState<SearchResult[]>([])
 	const [searching, setSearching] = useState(false)
-	const [form, setForm] = useState({
+	const [form, setForm] = useState<FormState>({
 		title: "",
 		director: "",
 		creator: "",
@@ -18,13 +54,12 @@ const AddModal = ({ type, onClose, onAdd }) => {
 		poster: "",
 		seasons: "",
 	})
-	const [mode, setMode] = useState("search")
-	const timeoutRef = useRef(null)
+	const [mode, setMode] = useState<"search" | "manual">("search")
+	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	const isFilm = type === "films"
 	const isSeries = type === "series"
 	const isBook = type === "books"
-	const _isComic = type === "comics"
 	const isMedia = isFilm || isSeries
 
 	useEffect(() => {
@@ -38,10 +73,14 @@ const AddModal = ({ type, onClose, onAdd }) => {
 			setSearching(true)
 			try {
 				if (isMedia) {
-					const results = await searchTMDB(query, isFilm ? "movie" : "tv", {
-						language: "fr-FR",
-					})
-					setResults(results.slice(0, 8))
+					const searchResults = await searchTMDB(
+						query,
+						isFilm ? "movie" : "tv",
+						{
+							language: "fr-FR",
+						},
+					)
+					setResults(searchResults.slice(0, 8))
 				} else {
 					// Google Books API pour livres et BD
 					const res = await fetch(
@@ -49,32 +88,43 @@ const AddModal = ({ type, onClose, onAdd }) => {
 					)
 					const data = await res.json()
 					setResults(
-						data.items?.map((item) => ({
-							id: item.id,
-							title: item.volumeInfo.title,
-							author: item.volumeInfo.authors?.join(", ") || "",
-							year: item.volumeInfo.publishedDate?.split("-")[0] || "",
-							poster:
-								item.volumeInfo.imageLinks?.thumbnail?.replace(
-									"http:",
-									"https:",
-								) || null,
-							genre: item.volumeInfo.categories?.join(", ") || "",
-						})) || [],
+						data.items?.map(
+							(item: {
+								id: string
+								volumeInfo: {
+									title: string
+									authors?: string[]
+									publishedDate?: string
+									imageLinks?: { thumbnail?: string }
+									categories?: string[]
+								}
+							}) => ({
+								id: item.id,
+								title: item.volumeInfo.title,
+								author: item.volumeInfo.authors?.join(", ") || "",
+								year: item.volumeInfo.publishedDate?.split("-")[0] || "",
+								poster:
+									item.volumeInfo.imageLinks?.thumbnail?.replace(
+										"http:",
+										"https:",
+									) || null,
+								genre: item.volumeInfo.categories?.join(", ") || "",
+							}),
+						) || [],
 					)
 				}
-			} catch (_e) {
+			} catch {
 				setResults([])
 			}
 			setSearching(false)
 		}, 400)
 	}, [query, isFilm, isMedia])
 
-	const selectItem = async (item) => {
+	const selectItem = async (item: SearchResult) => {
 		if (isMedia) {
 			try {
 				const { details, credits } = await getDetailsWithCredits(
-					item.id,
+					Number(item.id),
 					isFilm ? "movie" : "tv",
 					{ language: "fr-FR" },
 				)
@@ -82,7 +132,7 @@ const AddModal = ({ type, onClose, onAdd }) => {
 				if (!details || !credits) {
 					setForm({
 						...form,
-						title: item.title || item.name,
+						title: item.title || item.name || "",
 						year:
 							(item.release_date || item.first_air_date)?.split("-")[0] || "",
 					})
@@ -91,9 +141,11 @@ const AddModal = ({ type, onClose, onAdd }) => {
 
 				if (isFilm) {
 					setForm({
-						title: item.title,
+						title: item.title || "",
 						director:
 							credits.crew?.find((c) => c.job === "Director")?.name || "",
+						creator: "",
+						author: "",
 						year: item.release_date?.split("-")[0] || "",
 						genre: details.genres?.map((g) => g.name).join(", ") || "",
 						actors:
@@ -105,11 +157,14 @@ const AddModal = ({ type, onClose, onAdd }) => {
 						source: "",
 						watched: false,
 						poster: getPosterUrl(item.poster_path) || "",
+						seasons: "",
 					})
 				} else {
 					setForm({
-						title: item.name,
+						title: item.name || "",
+						director: "",
 						creator: details.created_by?.[0]?.name || "",
+						author: "",
 						year: item.first_air_date?.split("-")[0] || "",
 						genre: details.genres?.map((g) => g.name).join(", ") || "",
 						actors:
@@ -118,29 +173,32 @@ const AddModal = ({ type, onClose, onAdd }) => {
 								.map((a) => a.name)
 								.join(", ") || "",
 						country: details.origin_country?.[0] || "",
-						seasons: details.number_of_seasons || "",
+						seasons: String(details.number_of_seasons || ""),
 						source: "",
 						watched: false,
 						poster: getPosterUrl(item.poster_path) || "",
 					})
 				}
-			} catch (_e) {
+			} catch {
 				setForm({
 					...form,
-					title: item.title || item.name,
+					title: item.title || item.name || "",
 					year: (item.release_date || item.first_air_date)?.split("-")[0] || "",
 				})
 			}
 		} else {
 			// Livre ou BD
 			setForm({
-				title: item.title,
+				title: item.title || "",
+				director: "",
+				creator: "",
 				author: item.author || "",
 				year: item.year || "",
 				genre: item.genre || "",
 				source: "",
 				watched: false,
 				poster: item.poster || "",
+				seasons: "",
 			})
 		}
 		setMode("manual")
@@ -148,7 +206,7 @@ const AddModal = ({ type, onClose, onAdd }) => {
 		setQuery("")
 	}
 
-	const handleSubmit = (e) => {
+	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault()
 		if (!form.title) return
 		onAdd({
@@ -156,7 +214,7 @@ const AddModal = ({ type, onClose, onAdd }) => {
 			id: Date.now(),
 			year: parseInt(form.year, 10) || new Date().getFullYear(),
 			seasons: form.seasons ? parseInt(form.seasons, 10) : undefined,
-		})
+		} as unknown as Item)
 		onClose()
 	}
 
@@ -175,8 +233,16 @@ const AddModal = ({ type, onClose, onAdd }) => {
 	}
 
 	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: modal backdrop
+		// biome-ignore lint/a11y/useKeyWithClickEvents: modal backdrop pattern
 		<div className="modal-bg" onClick={onClose}>
-			<div className="modal add-modal" onClick={(e) => e.stopPropagation()}>
+			<div
+				className="modal add-modal"
+				onClick={(e) => e.stopPropagation()}
+				onKeyDown={(e) => e.stopPropagation()}
+				role="dialog"
+				aria-modal="true"
+			>
 				<div className="modal-head">
 					<div className="modal-title">Ajouter {getTypeLabel()}</div>
 					<button type="button" className="modal-close" onClick={onClose}>
@@ -194,13 +260,14 @@ const AddModal = ({ type, onClose, onAdd }) => {
 									value={query}
 									onChange={(e) => setQuery(e.target.value)}
 								/>
-								{searching && <div className="spinner"></div>}
+								{searching && <div className="spinner" />}
 							</div>
 
 							{results.length > 0 && (
 								<div className="search-results">
 									{results.map((m) => (
-										<div
+										<button
+											type="button"
 											key={m.id}
 											className="search-result"
 											onClick={() => selectItem(m)}
@@ -209,9 +276,8 @@ const AddModal = ({ type, onClose, onAdd }) => {
 												<img
 													src={
 														isMedia
-															? "https://image.tmdb.org/t/p/w154" +
-																m.poster_path
-															: m.poster
+															? TMDB_IMG_SM + m.poster_path
+															: m.poster || ""
 													}
 													alt=""
 												/>
@@ -229,7 +295,7 @@ const AddModal = ({ type, onClose, onAdd }) => {
 													{!isMedia && m.author && ` · ${m.author}`}
 												</div>
 											</div>
-										</div>
+										</button>
 									))}
 								</div>
 							)}
