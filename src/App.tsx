@@ -7,6 +7,7 @@ import { fetchPoster } from "@/api/tmdb"
 import AddModal from "@/components/AddModal"
 import EditModal from "@/components/EditModal"
 import FixPosterModal from "@/components/FixPosterModal"
+import Header from "@/components/Header"
 import ItemCard from "@/components/ItemCard"
 import ItemListRow from "@/components/ItemListRow"
 import ItemModal from "@/components/ItemModal"
@@ -355,177 +356,35 @@ const App = () => {
 
 	return (
 		<div>
-			<header className="header">
-				<div className="header-top">
-					<div className="logo">
-						ma <span>collection</span>
-					</div>
-					<div className="header-right">
-						<div className="stats">
-							<b>{stats.total}</b> {tab} · <b>{stats.watched}</b>{" "}
-							{tab === "books" || tab === "comics"
-								? stats.watched > 1
-									? "lus"
-									: "lu"
-								: stats.watched > 1
-									? "vus"
-									: "vu"}
-							{syncing && <span className="sync-icon"> ⟳</span>}
-						</div>
-						<button
-							type="button"
-							className="add-btn"
-							onClick={() => setShowAdd(true)}
-						>
-							+ Ajouter
-						</button>
-					</div>
-				</div>
-
-				{posterProgress && (
-					<div className="poster-progress">
-						Téléchargement des affiches... {posterProgress}
-					</div>
-				)}
-
-				<div className="tabs">
-					<button
-						type="button"
-						className={`tab ${tab === "films" ? "active" : ""}`}
-						onClick={() => {
-							setTab("films")
-							setGenre("")
-						}}
-					>
-						Films <span className="tab-count">{films.length}</span>
-					</button>
-					<button
-						type="button"
-						className={`tab ${tab === "series" ? "active" : ""}`}
-						onClick={() => {
-							setTab("series")
-							setGenre("")
-						}}
-					>
-						Séries <span className="tab-count">{series.length}</span>
-					</button>
-					<button
-						type="button"
-						className={`tab ${tab === "books" ? "active" : ""}`}
-						onClick={() => {
-							setTab("books")
-							setGenre("")
-						}}
-					>
-						Livres <span className="tab-count">{books.length}</span>
-					</button>
-					<button
-						type="button"
-						className={`tab ${tab === "comics" ? "active" : ""}`}
-						onClick={() => {
-							setTab("comics")
-							setGenre("")
-						}}
-					>
-						BD <span className="tab-count">{comics.length}</span>
-					</button>
-				</div>
-
-				<div className="controls">
-					<input
-						className="search-box"
-						placeholder="Rechercher..."
-						value={search}
-						onChange={(e) => setSearch(e.target.value)}
-					/>
-					<div className="filter-divider" />
-					<button
-						type="button"
-						className={`filter-btn ${filter === "all" ? "active" : ""}`}
-						onClick={() => setFilter("all")}
-					>
-						Tous
-					</button>
-					<button
-						type="button"
-						className={`filter-btn ${filter === "unwatched" ? "active" : ""}`}
-						onClick={() => setFilter("unwatched")}
-					>
-						{tab === "books" || tab === "comics" ? "À lire" : "À voir"}
-					</button>
-					<button
-						type="button"
-						className={`filter-btn ${filter === "watched" ? "active" : ""}`}
-						onClick={() => setFilter("watched")}
-					>
-						{tab === "books" || tab === "comics" ? "Lus" : "Vus"}
-					</button>
-					<div className="filter-divider" />
-					<select value={genre} onChange={(e) => setGenre(e.target.value)}>
-						<option value="">Genre</option>
-						{genres.map((g) => (
-							<option key={g} value={g}>
-								{g}
-							</option>
-						))}
-					</select>
-					<select
-						value={sort}
-						onChange={(e) => setSort(e.target.value as SortType)}
-						className="sort-select"
-					>
-						<option value="year-desc">Année ↓</option>
-						<option value="year-asc">Année ↑</option>
-						<option value="alpha-asc">A → Z</option>
-						<option value="alpha-desc">Z → A</option>
-						<option value="director">
-							{tab === "films"
-								? "Réalisateur"
-								: tab === "series"
-									? "Créateur"
-									: "Auteur"}
-						</option>
-						<option value="added">Récents</option>
-						<option value="unwatched">
-							{tab === "books" || tab === "comics" ? "Non lus" : "Non vus"}
-						</option>
-					</select>
-					<div className="view-controls">
-						<button
-							type="button"
-							className={`view-btn ${view === "grid" ? "active" : ""}`}
-							onClick={() => setView("grid")}
-						>
-							▦
-						</button>
-						<button
-							type="button"
-							className={`view-btn ${view === "list" ? "active" : ""}`}
-							onClick={() => setView("list")}
-						>
-							☰
-						</button>
-						<button
-							type="button"
-							className={`view-btn ${showSeparators ? "active" : ""}`}
-							onClick={() => setShowSeparators(!showSeparators)}
-							title="Séparateurs"
-						>
-							―
-						</button>
-						{view === "grid" && (
-							<input
-								type="range"
-								className="size-slider"
-								min="80"
-								max="160"
-								value={cardSize}
-								onChange={(e) => setCardSize(Number(e.target.value))}
-							/>
-						)}
-					</div>
-				</div>
-			</header>
+			<Header
+				stats={stats}
+				syncing={syncing}
+				posterProgress={posterProgress}
+				onAddClick={() => setShowAdd(true)}
+				tab={tab}
+				onTabChange={setTab}
+				counts={{
+					films: films.length,
+					series: series.length,
+					books: books.length,
+					comics: comics.length,
+				}}
+				search={search}
+				onSearchChange={setSearch}
+				filter={filter}
+				onFilterChange={setFilter}
+				genre={genre}
+				onGenreChange={setGenre}
+				genres={genres}
+				sort={sort}
+				onSortChange={setSort}
+				view={view}
+				onViewChange={setView}
+				showSeparators={showSeparators}
+				onShowSeparatorsChange={setShowSeparators}
+				cardSize={cardSize}
+				onCardSizeChange={setCardSize}
+			/>
 
 			<main className="main">
 				<div className="count">
