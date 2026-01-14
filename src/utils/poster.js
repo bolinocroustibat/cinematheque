@@ -1,3 +1,12 @@
+import { TMDB_IMG_SM, TMDB_IMG_LG } from "@/api/tmdb.js"
+
+// Helper to get poster URL from TMDB poster path
+export const getPosterUrl = (posterPath, size = "sm") => {
+	if (!posterPath) return null
+	const base = size === "lg" ? TMDB_IMG_LG : TMDB_IMG_SM
+	return base + posterPath
+}
+
 // Helper to get small poster URL for grid
 export const getSmallPoster = (url) => {
 	if (!url) return null

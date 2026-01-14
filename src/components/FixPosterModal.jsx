@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
+import { searchTMDB } from "@/api/tmdb.js"
+import { getPosterUrl } from "@/utils/poster.js"
 
 const FixPosterModal = ({ item, type, onClose, onSelect }) => {
 	const [query, setQuery] = useState(item.title)

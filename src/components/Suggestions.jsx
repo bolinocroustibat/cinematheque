@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react"
-import { TMDB_BASE_URL } from "@/api/tmdb.js"
+import {
+	getDetailsWithCredits,
+	getRecommendations,
+	searchTMDB,
+} from "@/api/tmdb.js"
+import { getPosterUrl } from "@/utils/poster.js"
 
 const Suggestions = ({ item, type, existingIds, onAdd }) => {
 	const [suggestions, setSuggestions] = useState([])

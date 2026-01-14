@@ -1,6 +1,9 @@
 export const TMDB_BASE_URL = "https://api.themoviedb.org/3"
 export const TMDB_IMG_SM = "https://image.tmdb.org/t/p/w154"
 export const TMDB_IMG_LG = "https://image.tmdb.org/t/p/w300"
+export const OMDB_BASE_URL = "https://www.omdbapi.com"
+
+import { getPosterUrl } from "@/utils/poster.js"
 
 const getApiKey = () => import.meta.env.VITE_TMDB_KEY || ""
 const getOmdbKey = () => import.meta.env.VITE_OMDB_KEY || ""
@@ -92,16 +95,8 @@ export const getDetailsWithCredits = async (
 	return { details, credits }
 }
 
-// Helper to get poster URL
-export const getPosterUrl = (posterPath, size = "sm") => {
-	if (!posterPath) return null
-	const base = size === "lg" ? TMDB_IMG_LG : TMDB_IMG_SM
-	return base + posterPath
-}
-
 // Fetch poster from TMDB then fallback to OMDb
 export const fetchPoster = async (title, year, type = "movie") => {
-	const endpoint = type === "movie" ? "search/movie" : "search/tv"
 	try {
 		const results = await searchTMDB(title, type, { year })
 		if (results[0]?.poster_path) {
@@ -113,7 +108,7 @@ export const fetchPoster = async (title, year, type = "movie") => {
 		const OMDB_KEY = getOmdbKey()
 		try {
 			const res = await fetch(
-				`https://www.omdbapi.com/?apikey=${OMDB_KEY}&t=${encodeURIComponent(title)}&y=${year}&type=movie`,
+				`${OMDB_BASE_URL}/?apikey=${OMDB_KEY}&t=${encodeURIComponent(title)}&y=${year}&type=movie`,
 			)
 			const data = await res.json()
 			if (data.Poster && data.Poster !== "N/A") {

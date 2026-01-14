@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
-import { getDetailsWithCredits, getPosterUrl, searchTMDB } from "@/api/tmdb.js"
+import { getDetailsWithCredits, searchTMDB } from "@/api/tmdb.js"
+import { getPosterUrl } from "@/utils/poster.js"
 
 const AddModal = ({ type, onClose, onAdd }) => {
 	const [query, setQuery] = useState("")
