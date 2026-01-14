@@ -182,7 +182,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 					newItem.seasons = details.number_of_seasons || 0
 				}
 
-				onAdd(newItem as Item)
+				onAdd(newItem as unknown as Item)
 			} else {
 				// Ajout livre/BD depuis Google Books
 				const res = await fetch(
@@ -203,7 +203,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 					watched: false,
 				}
 
-				onAdd(newItem as Item)
+				onAdd(newItem as unknown as Item)
 			}
 
 			setSuggestions(suggestions.filter((s) => s.id !== sug.id))
