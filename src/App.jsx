@@ -5,7 +5,7 @@ import {
 } from "@/api/sheets.js"
 import { fetchPoster } from "@/api/tmdb"
 import AddModal from "@/components/AddModal.jsx"
-import EditModal from "@/components/EditModal.jsx"
+import EditModal from "@/components/EditModal"
 import FixPosterModal from "@/components/FixPosterModal.jsx"
 import ItemModal from "@/components/ItemModal"
 import { getSmallPoster } from "@/utils/poster"

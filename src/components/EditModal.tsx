@@ -1,39 +1,72 @@
 import { useState } from "react"
+import type { Item, TabType } from "@/types"
 
-const EditModal = ({ item, type, onClose, onSave }) => {
+interface EditModalProps {
+	item: Item
+	type: TabType
+	onClose: () => void
+	onSave: (id: number, updates: Partial<Item>) => void
+}
+
+interface FormState {
+	title: string
+	director: string
+	creator: string
+	author: string
+	year: string | number
+	genre: string
+	actors: string
+	country: string
+	source: string
+	seasons: string | number
+	watched: boolean
+	rating: number
+}
+
+const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
 	const isFilm = type === "films"
 	const isSeries = type === "series"
 	const isMedia = isFilm || isSeries
 
-	const [form, setForm] = useState({
+	const [form, setForm] = useState<FormState>({
 		title: item.title || "",
-		director: item.director || "",
-		creator: item.creator || "",
-		author: item.author || "",
+		director: "director" in item ? item.director || "" : "",
+		creator: "creator" in item ? item.creator || "" : "",
+		author: "author" in item ? item.author || "" : "",
 		year: item.year || "",
 		genre: item.genre || "",
-		actors: item.actors || "",
-		country: item.country || "",
+		actors: "actors" in item ? item.actors || "" : "",
+		country: "country" in item ? item.country || "" : "",
 		source: item.source || "",
-		seasons: item.seasons || "",
+		seasons: "seasons" in item ? item.seasons || "" : "",
 		watched: item.watched || false,
 		rating: item.rating || 0,
 	})
 
-	const handleSubmit = (e) => {
+	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault()
 		if (!form.title) return
 		onSave(item.id, {
 			...form,
-			year: parseInt(form.year, 10) || item.year,
-			seasons: form.seasons ? parseInt(form.seasons, 10) : undefined,
+			year: parseInt(String(form.year), 10) || item.year,
+			seasons: form.seasons
+				? parseInt(String(form.seasons), 10)
+				: undefined,
 			rating: form.rating || undefined,
-		})
+		} as Partial<Item>)
 	}
 
 	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: modal backdrop
+		// biome-ignore lint/a11y/useKeyWithClickEvents: modal backdrop pattern
 		<div className="modal-bg" onClick={onClose}>
-			<div className="modal add-modal" onClick={(e) => e.stopPropagation()}>
+			<div
+				className="modal add-modal"
+				onClick={(e) => e.stopPropagation()}
+				onKeyDown={(e) => e.stopPropagation()}
+				role="dialog"
+				aria-modal="true"
+			>
 				<div className="modal-head">
 					<div className="modal-title">Modifier</div>
 					<button type="button" className="modal-close" onClick={onClose}>
@@ -135,12 +168,13 @@ const EditModal = ({ item, type, onClose, onSave }) => {
 								<span>{isMedia ? "Vu" : "Lu"}</span>
 							</label>
 							{form.watched && (
-								<label>
+								<div className="form-field">
 									<span>Note</span>
 									<div className="rating-input">
 										{[1, 2, 3, 4, 5].map((n) => (
-											<span
+											<button
 												key={n}
+												type="button"
 												className={`star ${form.rating >= n ? "active" : ""}`}
 												onClick={() =>
 													setForm({
@@ -150,10 +184,10 @@ const EditModal = ({ item, type, onClose, onSave }) => {
 												}
 											>
 												★
-											</span>
+											</button>
 										))}
 									</div>
-								</label>
+								</div>
 							)}
 						</div>
 
