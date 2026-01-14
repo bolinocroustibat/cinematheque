@@ -8,38 +8,39 @@ import AddModal from "@/components/AddModal"
 import EditModal from "@/components/EditModal"
 import FixPosterModal from "@/components/FixPosterModal"
 import ItemModal from "@/components/ItemModal"
+import type { FilterType, Item, SortType, TabType, ViewType } from "@/types"
 import { getSmallPoster } from "@/utils/poster"
 import { getGroupKey, sortItems } from "@/utils/sorting"
 
 const App = () => {
-	const [tab, setTab] = useState("films")
-	const [films, setFilms] = useState(() => {
+	const [tab, setTab] = useState<TabType>("films")
+	const [films, setFilms] = useState<Item[]>(() => {
 		const cached = localStorage.getItem("cine_films_cache")
 		return cached ? JSON.parse(cached) : []
 	})
-	const [series, setSeries] = useState(() => {
+	const [series, setSeries] = useState<Item[]>(() => {
 		const cached = localStorage.getItem("cine_series_cache")
 		return cached ? JSON.parse(cached) : []
 	})
-	const [books, setBooks] = useState(() => {
+	const [books, setBooks] = useState<Item[]>(() => {
 		const cached = localStorage.getItem("cine_books_cache")
 		return cached ? JSON.parse(cached) : []
 	})
-	const [comics, setComics] = useState(() => {
+	const [comics, setComics] = useState<Item[]>(() => {
 		const cached = localStorage.getItem("cine_comics_cache")
 		return cached ? JSON.parse(cached) : []
 	})
 	const [search, setSearch] = useState("")
-	const [filter, setFilter] = useState("all")
+	const [filter, setFilter] = useState<FilterType>("all")
 	const [genre, setGenre] = useState("")
-	const [selected, setSelected] = useState(null)
-	const [view, setView] = useState("grid")
+	const [selected, setSelected] = useState<Item | null>(null)
+	const [view, setView] = useState<ViewType>("grid")
 	const [cardSize, setCardSize] = useState(120)
 	const [showAdd, setShowAdd] = useState(false)
 	const [showFix, setShowFix] = useState(false)
 	const [loading, setLoading] = useState(false)
 	const [syncing, setSyncing] = useState(false)
-	const [_lastSync, setLastSync] = useState(null)
+	const [_lastSync, setLastSync] = useState<Date | null>(null)
 
 	const items =
 		tab === "films"
@@ -49,7 +50,7 @@ const App = () => {
 				: tab === "books"
 					? books
 					: comics
-	const setItems =
+	const setItems: React.Dispatch<React.SetStateAction<Item[]>> =
 		tab === "films"
 			? setFilms
 			: tab === "series"
@@ -61,7 +62,7 @@ const App = () => {
 	const [posterProgress, setPosterProgress] = useState("")
 
 	// Fetch missing posters after loading
-	const fetchMissingPosters = useCallback(async (filmsList) => {
+	const fetchMissingPosters = useCallback(async (filmsList: Item[]) => {
 		const needPoster = filmsList.filter((f) => !f.poster)
 		if (needPoster.length === 0) return filmsList
 
@@ -103,7 +104,7 @@ const App = () => {
 			setLastSync(new Date())
 
 			// Check if we need to fetch posters (en arrière-plan)
-			const missingPosters = loadedFilms.filter((f) => !f.poster).length
+			const missingPosters = loadedFilms.filter((f: Item) => !f.poster).length
 
 			if (missingPosters > 0) {
 				const updatedFilms = await fetchMissingPosters(loadedFilms)
@@ -155,7 +156,12 @@ const App = () => {
 		}
 	}, [comics])
 
-	const saveToSheets = async (newFilms, newSeries, newBooks, newComics) => {
+	const saveToSheets = async (
+		newFilms?: Item[],
+		newSeries?: Item[],
+		newBooks?: Item[],
+		newComics?: Item[],
+	) => {
 		setSyncing(true)
 		try {
 			await saveToSheetsAPI(
@@ -175,7 +181,7 @@ const App = () => {
 		setSyncing(false)
 	}
 
-	const [sort, setSort] = useState("year-desc")
+	const [sort, setSort] = useState<SortType>("year-desc")
 	const [showSeparators, setShowSeparators] = useState(true)
 	const [showEdit, setShowEdit] = useState(false)
 
@@ -192,8 +198,14 @@ const App = () => {
 			if (
 				search &&
 				!f.title?.toLowerCase().includes(search.toLowerCase()) &&
-				!f.director?.toLowerCase().includes(search.toLowerCase()) &&
-				!f.author?.toLowerCase().includes(search.toLowerCase())
+				!(
+					"director" in f &&
+					f.director?.toLowerCase().includes(search.toLowerCase())
+				) &&
+				!(
+					"author" in f &&
+					f.author?.toLowerCase().includes(search.toLowerCase())
+				)
 			)
 				return false
 			if (filter === "watched" && !f.watched) return false
@@ -206,12 +218,13 @@ const App = () => {
 	)
 
 	const groupedItems = useMemo(() => {
-		if (sort === "added") return [{ key: null, items: filtered }]
+		if (sort === "added")
+			return [{ key: null as string | null, items: filtered }]
 
-		const groups = []
-		let currentKey = null
+		const groups: { key: string | null; items: Item[] }[] = []
+		let currentKey: string | null = null
 
-		filtered.forEach((item) => {
+		for (const item of filtered) {
 			const key = getGroupKey(item, sort, tab)
 			if (key !== currentKey) {
 				groups.push({ key, items: [item] })
@@ -219,7 +232,7 @@ const App = () => {
 			} else {
 				groups[groups.length - 1].items.push(item)
 			}
-		})
+		}
 
 		return groups
 	}, [filtered, sort, tab])
@@ -229,7 +242,12 @@ const App = () => {
 		watched: items.filter((f) => f.watched).length,
 	}
 
-	const saveAll = (newFilms, newSeries, newBooks, newComics) => {
+	const saveAll = (
+		newFilms?: Item[],
+		newSeries?: Item[],
+		newBooks?: Item[],
+		newComics?: Item[],
+	) => {
 		saveToSheets(
 			newFilms !== undefined ? newFilms : films,
 			newSeries !== undefined ? newSeries : series,
@@ -238,7 +256,7 @@ const App = () => {
 		)
 	}
 
-	const toggleWatch = (id, e) => {
+	const toggleWatch = (id: number, e?: React.MouseEvent) => {
 		if (e) e.stopPropagation()
 		const newItems = items.map((f) =>
 			f.id === id ? { ...f, watched: !f.watched } : f,
@@ -255,7 +273,7 @@ const App = () => {
 		else saveAll(undefined, undefined, undefined, newItems)
 	}
 
-	const addItem = (item) => {
+	const addItem = (item: Item) => {
 		const newItems = [item, ...items]
 		setItems(newItems)
 
@@ -266,7 +284,7 @@ const App = () => {
 		else saveAll(undefined, undefined, undefined, newItems)
 	}
 
-	const deleteItem = (id) => {
+	const deleteItem = (id: number) => {
 		const newItems = items.filter((f) => f.id !== id)
 		setItems(newItems)
 		setSelected(null)
@@ -278,7 +296,10 @@ const App = () => {
 		else saveAll(undefined, undefined, undefined, newItems)
 	}
 
-	const updatePoster = (id, updates) => {
+	const updatePoster = (
+		id: number,
+		updates: { poster?: string; title?: string; year?: number },
+	) => {
 		// updates peut être {poster, title, year} ou juste {poster}
 		const newItems = items.map((f) => {
 			if (f.id === id) {
@@ -309,10 +330,10 @@ const App = () => {
 		else saveAll(undefined, undefined, undefined, newItems)
 	}
 
-	const updateItem = (id, updates) => {
+	const updateItem = (id: number, updates: Partial<Item>) => {
 		const newItems = items.map((f) => (f.id === id ? { ...f, ...updates } : f))
 		setItems(newItems)
-		if (selected?.id === id) setSelected({ ...selected, ...updates })
+		if (selected?.id === id) setSelected({ ...selected, ...updates } as Item)
 		setShowEdit(false)
 
 		if (tab === "films") saveAll(newItems, undefined, undefined, undefined)
@@ -325,7 +346,7 @@ const App = () => {
 	if (loading && films.length === 0) {
 		return (
 			<div className="loading-screen">
-				<div className="loading-spinner"></div>
+				<div className="loading-spinner" />
 				<div>Chargement de ta cinémathèque...</div>
 			</div>
 		)
@@ -416,7 +437,7 @@ const App = () => {
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
 					/>
-					<div className="filter-divider"></div>
+					<div className="filter-divider" />
 					<button
 						type="button"
 						className={`filter-btn ${filter === "all" ? "active" : ""}`}
@@ -438,7 +459,7 @@ const App = () => {
 					>
 						{tab === "books" || tab === "comics" ? "Lus" : "Vus"}
 					</button>
-					<div className="filter-divider"></div>
+					<div className="filter-divider" />
 					<select value={genre} onChange={(e) => setGenre(e.target.value)}>
 						<option value="">Genre</option>
 						{genres.map((g) => (
@@ -449,7 +470,7 @@ const App = () => {
 					</select>
 					<select
 						value={sort}
-						onChange={(e) => setSort(e.target.value)}
+						onChange={(e) => setSort(e.target.value as SortType)}
 						className="sort-select"
 					>
 						<option value="year-desc">Année ↓</option>
@@ -520,10 +541,15 @@ const App = () => {
 										)}
 										<div
 											className="grid"
-											style={{ "--card-size": `${cardSize}px` }}
+											style={
+												{
+													"--card-size": `${cardSize}px`,
+												} as React.CSSProperties
+											}
 										>
 											{group.items.map((f) => (
-												<div
+												<button
+													type="button"
 													key={f.id}
 													className={`card ${f.watched ? "is-watched" : "is-unwatched"}`}
 													onClick={() => setSelected(f)}
@@ -532,7 +558,7 @@ const App = () => {
 														<>
 															<img
 																className="card-img"
-																src={getSmallPoster(f.poster)}
+																src={getSmallPoster(f.poster) ?? undefined}
 																alt={f.title}
 																loading="lazy"
 															/>
@@ -550,10 +576,14 @@ const App = () => {
 													<div
 														className={`watch-btn ${f.watched ? "watched" : ""}`}
 														onClick={(e) => toggleWatch(f.id, e)}
+														onKeyDown={(e) => e.stopPropagation()}
+														role="checkbox"
+														aria-checked={f.watched}
+														tabIndex={0}
 													>
 														✓
 													</div>
-												</div>
+												</button>
 											))}
 										</div>
 									</Fragment>
@@ -561,10 +591,13 @@ const App = () => {
 							) : (
 								<div
 									className="grid"
-									style={{ "--card-size": `${cardSize}px` }}
+									style={
+										{ "--card-size": `${cardSize}px` } as React.CSSProperties
+									}
 								>
 									{filtered.map((f) => (
-										<div
+										<button
+											type="button"
 											key={f.id}
 											className={`card ${f.watched ? "is-watched" : "is-unwatched"}`}
 											onClick={() => setSelected(f)}
@@ -573,7 +606,7 @@ const App = () => {
 												<>
 													<img
 														className="card-img"
-														src={getSmallPoster(f.poster)}
+														src={getSmallPoster(f.poster) ?? undefined}
 														alt={f.title}
 														loading="lazy"
 													/>
@@ -591,10 +624,14 @@ const App = () => {
 											<div
 												className={`watch-btn ${f.watched ? "watched" : ""}`}
 												onClick={(e) => toggleWatch(f.id, e)}
+												onKeyDown={(e) => e.stopPropagation()}
+												role="checkbox"
+												aria-checked={f.watched}
+												tabIndex={0}
 											>
 												✓
 											</div>
-										</div>
+										</button>
 									))}
 								</div>
 							)}
@@ -609,7 +646,8 @@ const App = () => {
 										)}
 										<div className="list">
 											{group.items.map((f) => (
-												<div
+												<button
+													type="button"
 													key={f.id}
 													className={`list-item ${f.watched ? "is-watched" : "is-unwatched"}`}
 													onClick={() => setSelected(f)}
@@ -617,7 +655,7 @@ const App = () => {
 													{f.poster ? (
 														<img
 															className="list-poster"
-															src={getSmallPoster(f.poster)}
+															src={getSmallPoster(f.poster) ?? undefined}
 															alt=""
 															loading="lazy"
 														/>
@@ -627,16 +665,23 @@ const App = () => {
 													<div className="list-info">
 														<div className="list-title">{f.title}</div>
 														<div className="list-meta">
-															{f.director || f.creator || f.author} · {f.year}
+															{("director" in f && f.director) ||
+																("creator" in f && f.creator) ||
+																("author" in f && f.author)}{" "}
+															· {f.year}
 														</div>
 													</div>
 													<div
 														className={`watch-btn ${f.watched ? "watched" : ""}`}
 														onClick={(e) => toggleWatch(f.id, e)}
+														onKeyDown={(e) => e.stopPropagation()}
+														role="checkbox"
+														aria-checked={f.watched}
+														tabIndex={0}
 													>
 														✓
 													</div>
-												</div>
+												</button>
 											))}
 										</div>
 									</Fragment>
@@ -644,7 +689,8 @@ const App = () => {
 							) : (
 								<div className="list">
 									{filtered.map((f) => (
-										<div
+										<button
+											type="button"
 											key={f.id}
 											className={`list-item ${f.watched ? "is-watched" : "is-unwatched"}`}
 											onClick={() => setSelected(f)}
@@ -652,7 +698,7 @@ const App = () => {
 											{f.poster ? (
 												<img
 													className="list-poster"
-													src={getSmallPoster(f.poster)}
+													src={getSmallPoster(f.poster) ?? undefined}
 													alt=""
 													loading="lazy"
 												/>
@@ -662,16 +708,23 @@ const App = () => {
 											<div className="list-info">
 												<div className="list-title">{f.title}</div>
 												<div className="list-meta">
-													{f.director || f.creator || f.author} · {f.year}
+													{("director" in f && f.director) ||
+														("creator" in f && f.creator) ||
+														("author" in f && f.author)}{" "}
+													· {f.year}
 												</div>
 											</div>
 											<div
 												className={`watch-btn ${f.watched ? "watched" : ""}`}
 												onClick={(e) => toggleWatch(f.id, e)}
+												onKeyDown={(e) => e.stopPropagation()}
+												role="checkbox"
+												aria-checked={f.watched}
+												tabIndex={0}
 											>
 												✓
 											</div>
-										</div>
+										</button>
 									))}
 								</div>
 							)}
