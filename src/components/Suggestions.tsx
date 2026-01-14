@@ -4,13 +4,33 @@ import {
 	getRecommendations,
 	searchTMDB,
 } from "@/api/tmdb"
+import type { Item, TabType } from "@/types"
 import { getPosterUrl } from "@/utils/poster"
 
-const Suggestions = ({ item, type, existingIds, onAdd }) => {
-	const [suggestions, setSuggestions] = useState([])
+interface SuggestionsProps {
+	item: Item
+	type: TabType
+	existingIds: string[]
+	onAdd: (item: Item) => void
+}
+
+interface Suggestion {
+	id: string | number
+	title: string
+	year: string
+	poster: string | null
+	author?: string
+	source: "tmdb" | "google"
+}
+
+const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
+	const [suggestions, setSuggestions] = useState<Suggestion[]>([])
 	const [loading, setLoading] = useState(false)
 
 	const isMedia = type === "films" || type === "series"
+
+	// Get author from item if it exists
+	const itemAuthor = "author" in item ? item.author : undefined
 
 	useEffect(() => {
 		const fetchSuggestions = async () => {
@@ -44,10 +64,10 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 							.slice(0, 6)
 							.map((r) => ({
 								id: r.id,
-								title: r.title || r.name,
-								year: (r.release_date || r.first_air_date)?.split("-")[0],
+								title: r.title || r.name || "",
+								year: (r.release_date || r.first_air_date)?.split("-")[0] || "",
 								poster: getPosterUrl(r.poster_path),
-								source: "tmdb",
+								source: "tmdb" as const,
 							}))
 
 						setSuggestions(filtered)
@@ -55,16 +75,14 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 				} else {
 					// Google Books pour livres/BD
 					const searchRes = await fetch(
-						`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(`${item.title} ${item.author || ""}`)}&maxResults=1`,
+						`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(`${item.title} ${itemAuthor || ""}`)}&maxResults=1`,
 					)
 					const searchData = await searchRes.json()
 
 					if (searchData.items?.[0]) {
-						const _bookId = searchData.items[0].id
-
 						// Chercher des livres similaires par auteur ou catégorie
 						const author =
-							item.author || searchData.items[0].volumeInfo?.authors?.[0] || ""
+							itemAuthor || searchData.items[0].volumeInfo?.authors?.[0] || ""
 						const category =
 							searchData.items[0].volumeInfo?.categories?.[0] || ""
 
@@ -79,7 +97,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 						const recData = await recRes.json()
 
 						const filtered = (recData.items || [])
-							.filter((r) => {
+							.filter((r: { volumeInfo?: { title?: string } }) => {
 								const title = r.volumeInfo?.title || ""
 								return (
 									title.toLowerCase() !== item.title.toLowerCase() &&
@@ -87,18 +105,28 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 								)
 							})
 							.slice(0, 6)
-							.map((r) => ({
-								id: r.id,
-								title: r.volumeInfo?.title || "",
-								year: r.volumeInfo?.publishedDate?.split("-")[0] || "",
-								poster:
-									r.volumeInfo?.imageLinks?.thumbnail?.replace(
-										"http:",
-										"https:",
-									) || null,
-								author: r.volumeInfo?.authors?.[0] || "",
-								source: "google",
-							}))
+							.map(
+								(r: {
+									id: string
+									volumeInfo?: {
+										title?: string
+										publishedDate?: string
+										imageLinks?: { thumbnail?: string }
+										authors?: string[]
+									}
+								}) => ({
+									id: r.id,
+									title: r.volumeInfo?.title || "",
+									year: r.volumeInfo?.publishedDate?.split("-")[0] || "",
+									poster:
+										r.volumeInfo?.imageLinks?.thumbnail?.replace(
+											"http:",
+											"https:",
+										) || null,
+									author: r.volumeInfo?.authors?.[0] || "",
+									source: "google" as const,
+								}),
+							)
 
 						setSuggestions(filtered)
 					}
@@ -112,21 +140,21 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 		if (item?.title) {
 			fetchSuggestions()
 		}
-	}, [existingIds.includes, isMedia, item.author, item.title, item.year, type])
+	}, [existingIds, isMedia, itemAuthor, item.title, item.year, type])
 
-	const addSuggestion = async (sug) => {
+	const addSuggestion = async (sug: Suggestion) => {
 		try {
 			if (sug.source === "tmdb") {
 				// Ajout film/série depuis TMDB
 				const { details, credits } = await getDetailsWithCredits(
-					sug.id,
+					Number(sug.id),
 					type === "films" ? "movie" : "tv",
 					{ language: "fr-FR" },
 				)
 
 				if (!details || !credits) return
 
-				const newItem = {
+				const newItem: Record<string, unknown> = {
 					id: Date.now(),
 					title: sug.title,
 					year: parseInt(sug.year, 10) || 0,
@@ -154,7 +182,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 					newItem.seasons = details.number_of_seasons || 0
 				}
 
-				onAdd(newItem)
+				onAdd(newItem as Item)
 			} else {
 				// Ajout livre/BD depuis Google Books
 				const res = await fetch(
@@ -175,7 +203,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 					watched: false,
 				}
 
-				onAdd(newItem)
+				onAdd(newItem as Item)
 			}
 
 			setSuggestions(suggestions.filter((s) => s.id !== sug.id))
@@ -200,11 +228,12 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 			<div className="suggestions-title">
 				{isMedia
 					? "Si vous avez aimé, vous aimerez peut-être..."
-					: `Du même auteur ou genre...`}
+					: "Du même auteur ou genre..."}
 			</div>
 			<div className="suggestions-grid">
 				{suggestions.map((sug) => (
-					<div
+					<button
+						type="button"
 						key={sug.id}
 						className="suggestion-card"
 						onClick={() => addSuggestion(sug)}
@@ -219,7 +248,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }) => {
 							<div className="suggestion-year">{sug.author || sug.year}</div>
 						</div>
 						<div className="suggestion-add">+</div>
-					</div>
+					</button>
 				))}
 			</div>
 		</div>
