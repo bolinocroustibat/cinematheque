@@ -7,9 +7,10 @@ import { fetchPoster } from "@/api/tmdb"
 import AddModal from "@/components/AddModal"
 import EditModal from "@/components/EditModal"
 import FixPosterModal from "@/components/FixPosterModal"
+import ItemCard from "@/components/ItemCard"
+import ItemListRow from "@/components/ItemListRow"
 import ItemModal from "@/components/ItemModal"
 import type { FilterType, Item, SortType, TabType, ViewType } from "@/types"
-import { getSmallPoster } from "@/utils/poster"
 import { getGroupKey, sortItems } from "@/utils/sorting"
 
 const App = () => {
@@ -548,43 +549,12 @@ const App = () => {
 											}
 										>
 											{group.items.map((f) => (
-												<button
-													type="button"
+												<ItemCard
 													key={f.id}
-													className={`card ${f.watched ? "is-watched" : "is-unwatched"}`}
-													onClick={() => setSelected(f)}
-												>
-													{f.poster ? (
-														<>
-															<img
-																className="card-img"
-																src={getSmallPoster(f.poster) ?? undefined}
-																alt={f.title}
-																loading="lazy"
-															/>
-															<div className="card-info">
-																<div className="card-title">{f.title}</div>
-																<div className="card-year">{f.year}</div>
-															</div>
-														</>
-													) : (
-														<div className="card-noimg">
-															<div className="card-title">{f.title}</div>
-															<div className="card-year">{f.year}</div>
-														</div>
-													)}
-													{/* biome-ignore lint/a11y/useSemanticElements: styled watch button */}
-													<div
-														className={`watch-btn ${f.watched ? "watched" : ""}`}
-														onClick={(e) => toggleWatch(f.id, e)}
-														onKeyDown={(e) => e.stopPropagation()}
-														role="checkbox"
-														aria-checked={f.watched}
-														tabIndex={0}
-													>
-														✓
-													</div>
-												</button>
+													item={f}
+													onSelect={setSelected}
+													onToggleWatch={toggleWatch}
+												/>
 											))}
 										</div>
 									</Fragment>
@@ -597,43 +567,12 @@ const App = () => {
 									}
 								>
 									{filtered.map((f) => (
-										<button
-											type="button"
+										<ItemCard
 											key={f.id}
-											className={`card ${f.watched ? "is-watched" : "is-unwatched"}`}
-											onClick={() => setSelected(f)}
-										>
-											{f.poster ? (
-												<>
-													<img
-														className="card-img"
-														src={getSmallPoster(f.poster) ?? undefined}
-														alt={f.title}
-														loading="lazy"
-													/>
-													<div className="card-info">
-														<div className="card-title">{f.title}</div>
-														<div className="card-year">{f.year}</div>
-													</div>
-												</>
-											) : (
-												<div className="card-noimg">
-													<div className="card-title">{f.title}</div>
-													<div className="card-year">{f.year}</div>
-												</div>
-											)}
-											{/* biome-ignore lint/a11y/useSemanticElements: styled watch button */}
-											<div
-												className={`watch-btn ${f.watched ? "watched" : ""}`}
-												onClick={(e) => toggleWatch(f.id, e)}
-												onKeyDown={(e) => e.stopPropagation()}
-												role="checkbox"
-												aria-checked={f.watched}
-												tabIndex={0}
-											>
-												✓
-											</div>
-										</button>
+											item={f}
+											onSelect={setSelected}
+											onToggleWatch={toggleWatch}
+										/>
 									))}
 								</div>
 							)}
@@ -648,43 +587,12 @@ const App = () => {
 										)}
 										<div className="list">
 											{group.items.map((f) => (
-												<button
-													type="button"
+												<ItemListRow
 													key={f.id}
-													className={`list-item ${f.watched ? "is-watched" : "is-unwatched"}`}
-													onClick={() => setSelected(f)}
-												>
-													{f.poster ? (
-														<img
-															className="list-poster"
-															src={getSmallPoster(f.poster) ?? undefined}
-															alt=""
-															loading="lazy"
-														/>
-													) : (
-														<div className="list-poster-empty">?</div>
-													)}
-													<div className="list-info">
-														<div className="list-title">{f.title}</div>
-														<div className="list-meta">
-															{("director" in f && f.director) ||
-																("creator" in f && f.creator) ||
-																("author" in f && f.author)}{" "}
-															· {f.year}
-														</div>
-													</div>
-													{/* biome-ignore lint/a11y/useSemanticElements: styled watch button */}
-													<div
-														className={`watch-btn ${f.watched ? "watched" : ""}`}
-														onClick={(e) => toggleWatch(f.id, e)}
-														onKeyDown={(e) => e.stopPropagation()}
-														role="checkbox"
-														aria-checked={f.watched}
-														tabIndex={0}
-													>
-														✓
-													</div>
-												</button>
+													item={f}
+													onSelect={setSelected}
+													onToggleWatch={toggleWatch}
+												/>
 											))}
 										</div>
 									</Fragment>
@@ -692,43 +600,12 @@ const App = () => {
 							) : (
 								<div className="list">
 									{filtered.map((f) => (
-										<button
-											type="button"
+										<ItemListRow
 											key={f.id}
-											className={`list-item ${f.watched ? "is-watched" : "is-unwatched"}`}
-											onClick={() => setSelected(f)}
-										>
-											{f.poster ? (
-												<img
-													className="list-poster"
-													src={getSmallPoster(f.poster) ?? undefined}
-													alt=""
-													loading="lazy"
-												/>
-											) : (
-												<div className="list-poster-empty">?</div>
-											)}
-											<div className="list-info">
-												<div className="list-title">{f.title}</div>
-												<div className="list-meta">
-													{("director" in f && f.director) ||
-														("creator" in f && f.creator) ||
-														("author" in f && f.author)}{" "}
-													· {f.year}
-												</div>
-											</div>
-											{/* biome-ignore lint/a11y/useSemanticElements: styled watch button */}
-											<div
-												className={`watch-btn ${f.watched ? "watched" : ""}`}
-												onClick={(e) => toggleWatch(f.id, e)}
-												onKeyDown={(e) => e.stopPropagation()}
-												role="checkbox"
-												aria-checked={f.watched}
-												tabIndex={0}
-											>
-												✓
-											</div>
-										</button>
+											item={f}
+											onSelect={setSelected}
+											onToggleWatch={toggleWatch}
+										/>
 									))}
 								</div>
 							)}
