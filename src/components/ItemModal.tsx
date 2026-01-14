@@ -1,5 +1,18 @@
-import Suggestions from "@/components/Suggestions.jsx"
+import Suggestions from "@/components/Suggestions"
+import type { Item, TabType } from "@/types"
 import { getLargePoster } from "@/utils/poster"
+
+interface ItemModalProps {
+	item: Item
+	tab: TabType
+	onClose: () => void
+	onToggleWatch: (id: number) => void
+	onEdit: () => void
+	onFix: () => void
+	onDelete: (id: number) => void
+	items: Item[]
+	onAdd: (item: Item) => void
+}
 
 const ItemModal = ({
 	item,
@@ -11,10 +24,24 @@ const ItemModal = ({
 	onDelete,
 	items,
 	onAdd,
-}) => {
+}: ItemModalProps) => {
+	// Get creator/author based on item type
+	const creator =
+		("director" in item ? item.director : undefined) ||
+		("creator" in item ? item.creator : undefined) ||
+		("author" in item ? item.author : undefined)
+
 	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: modal backdrop
+		// biome-ignore lint/a11y/useKeyWithClickEvents: modal backdrop pattern
 		<div className="modal-bg" onClick={onClose}>
-			<div className="modal" onClick={(e) => e.stopPropagation()}>
+			<div
+				className="modal"
+				onClick={(e) => e.stopPropagation()}
+				onKeyDown={(e) => e.stopPropagation()}
+				role="dialog"
+				aria-modal="true"
+			>
 				<div className="modal-head">
 					<div className="modal-title">{item.title}</div>
 					<button type="button" className="modal-close" onClick={onClose}>
@@ -25,27 +52,27 @@ const ItemModal = ({
 					{item.poster && (
 						<img
 							className="modal-poster"
-							src={getLargePoster(item.poster)}
+							src={getLargePoster(item.poster) ?? undefined}
 							alt=""
 						/>
 					)}
 					<div className="modal-meta">
-						{item.director || item.creator || item.author} · {item.year}{" "}
-						{item.country && `· ${item.country}`}
+						{creator} · {item.year}{" "}
+						{"country" in item && item.country && `· ${item.country}`}
 					</div>
-					{item.rating > 0 && (
+					{item.rating && item.rating > 0 && (
 						<div className="modal-rating">
 							{[1, 2, 3, 4, 5].map((n) => (
 								<span
 									key={n}
-									className={`star ${item.rating >= n ? "" : "empty"}`}
+									className={`star ${item.rating && item.rating >= n ? "" : "empty"}`}
 								>
 									★
 								</span>
 							))}
 						</div>
 					)}
-					{item.seasons && (
+					{"seasons" in item && item.seasons && (
 						<div className="modal-section">
 							<h4>Saisons</h4>
 							<p>
@@ -65,7 +92,7 @@ const ItemModal = ({
 							</div>
 						</div>
 					)}
-					{item.actors && (
+					{"actors" in item && item.actors && (
 						<div className="modal-section">
 							<h4>Casting</h4>
 							<p>{item.actors}</p>
@@ -119,6 +146,7 @@ const ItemModal = ({
 								className="btn btn-secondary"
 								href={`https://www.imdb.com/find?q=${encodeURIComponent(item.title)}`}
 								target="_blank"
+								rel="noreferrer"
 							>
 								IMDb
 							</a>
@@ -126,6 +154,7 @@ const ItemModal = ({
 								className="btn btn-primary"
 								href={`https://www.justwatch.com/fr/recherche?q=${encodeURIComponent(item.title)}`}
 								target="_blank"
+								rel="noreferrer"
 							>
 								Où regarder
 							</a>
@@ -136,6 +165,7 @@ const ItemModal = ({
 								className="btn btn-secondary"
 								href={`https://www.goodreads.com/search?q=${encodeURIComponent(item.title)}`}
 								target="_blank"
+								rel="noreferrer"
 							>
 								Goodreads
 							</a>
@@ -143,6 +173,7 @@ const ItemModal = ({
 								className="btn btn-primary"
 								href={`https://www.babelio.com/recherche.php?Recherche=${encodeURIComponent(item.title)}`}
 								target="_blank"
+								rel="noreferrer"
 							>
 								Babelio
 							</a>

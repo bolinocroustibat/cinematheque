@@ -7,7 +7,7 @@ import { fetchPoster } from "@/api/tmdb"
 import AddModal from "@/components/AddModal.jsx"
 import EditModal from "@/components/EditModal.jsx"
 import FixPosterModal from "@/components/FixPosterModal.jsx"
-import ItemModal from "@/components/ItemModal.jsx"
+import ItemModal from "@/components/ItemModal"
 import { getSmallPoster } from "@/utils/poster"
 import { getGroupKey, sortItems } from "@/utils/sorting"
 
