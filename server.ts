@@ -1,8 +1,6 @@
-import { serve } from "bun"
-import { readdir, stat } from "fs/promises"
-import { join, extname } from "path"
+import { serve, type BunFile } from "bun"
+import { dirname, extname, join } from "path"
 import { fileURLToPath } from "url"
-import { dirname } from "path"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -12,7 +10,7 @@ const STATIC_DIR = join(__dirname, "dist")
 
 console.log(`Static directory: ${STATIC_DIR}`)
 
-const MIME_TYPES = {
+const MIME_TYPES: Record<string, string> = {
 	".html": "text/html",
 	".js": "application/javascript",
 	".css": "text/css",
@@ -29,7 +27,7 @@ const MIME_TYPES = {
 	".eot": "application/vnd.ms-fontobject",
 }
 
-async function getFile(path) {
+async function getFile(path: string): Promise<BunFile | null> {
 	try {
 		const fullPath = join(STATIC_DIR, path)
 		const file = Bun.file(fullPath)
@@ -44,7 +42,7 @@ async function getFile(path) {
 
 serve({
 	port: PORT,
-	async fetch(req) {
+	async fetch(req: Request): Promise<Response> {
 		const url = new URL(req.url)
 		let pathname = url.pathname
 
@@ -55,7 +53,7 @@ serve({
 
 		// Try to serve the requested file
 		let file = await getFile(pathname)
-		
+
 		// If file not found and it's not an asset, try index.html (SPA routing)
 		if (!file && !pathname.includes(".")) {
 			file = await getFile("/index.html")

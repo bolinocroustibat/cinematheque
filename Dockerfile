@@ -32,10 +32,10 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 
 # Copy server script
-COPY server.js ./
+COPY server.ts ./
 
 # Expose the application port
 EXPOSE 3000
 
 # Start the application
-CMD ["bun", "server.js"]
+CMD ["bun", "server.ts"]
