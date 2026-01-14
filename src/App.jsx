@@ -3,13 +3,13 @@ import {
 	loadFromSheets as loadFromSheetsAPI,
 	saveToSheets as saveToSheetsAPI,
 } from "@/api/sheets.js"
-import { fetchPoster } from "@/api/tmdb.js"
+import { fetchPoster } from "@/api/tmdb"
 import AddModal from "@/components/AddModal.jsx"
 import EditModal from "@/components/EditModal.jsx"
 import FixPosterModal from "@/components/FixPosterModal.jsx"
 import ItemModal from "@/components/ItemModal.jsx"
-import { getSmallPoster } from "@/utils/poster.js"
-import { getGroupKey, sortItems } from "@/utils/sorting.js"
+import { getSmallPoster } from "@/utils/poster"
+import { getGroupKey, sortItems } from "@/utils/sorting"
 
 const App = () => {
 	const [tab, setTab] = useState("films")

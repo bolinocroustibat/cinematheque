@@ -1,4 +1,6 @@
-export const sortItems = (list, sort) => {
+import type { Item, SortType, TabType } from "@/types"
+
+export const sortItems = (list: Item[], sort: SortType): Item[] => {
 	const sorted = [...list]
 	switch (sort) {
 		case "alpha-asc":
@@ -14,12 +16,19 @@ export const sortItems = (list, sort) => {
 		case "year-asc":
 			return sorted.sort((a, b) => (a.year || 0) - (b.year || 0))
 		case "director":
-			return sorted.sort((a, b) =>
-				(a.director || a.creator || a.author || "").localeCompare(
-					b.director || b.creator || b.author || "",
-					"fr",
-				),
-			)
+			return sorted.sort((a, b) => {
+				const aVal =
+					("director" in a ? a.director : undefined) ||
+					("creator" in a ? a.creator : undefined) ||
+					("author" in a ? a.author : undefined) ||
+					""
+				const bVal =
+					("director" in b ? b.director : undefined) ||
+					("creator" in b ? b.creator : undefined) ||
+					("author" in b ? b.author : undefined) ||
+					""
+				return aVal.localeCompare(bVal, "fr")
+			})
 		case "added":
 			return sorted.sort((a, b) => (b.id || 0) - (a.id || 0))
 		case "unwatched":
@@ -33,7 +42,11 @@ export const sortItems = (list, sort) => {
 }
 
 // Group items by separator
-export const getGroupKey = (item, sort, tab) => {
+export const getGroupKey = (
+	item: Item,
+	sort: SortType,
+	tab: TabType,
+): string | null => {
 	switch (sort) {
 		case "alpha-asc":
 		case "alpha-desc":
@@ -43,13 +56,14 @@ export const getGroupKey = (item, sort, tab) => {
 			const decade = Math.floor((item.year || 0) / 10) * 10
 			return decade > 0 ? `${decade}s` : "Inconnu"
 		}
-		case "director":
-			return (
-				(item.director ||
-					item.creator ||
-					item.author ||
-					"Inconnu")[0]?.toUpperCase() || "#"
-			)
+		case "director": {
+			const val =
+				("director" in item ? item.director : undefined) ||
+				("creator" in item ? item.creator : undefined) ||
+				("author" in item ? item.author : undefined) ||
+				"Inconnu"
+			return val[0]?.toUpperCase() || "#"
+		}
 		case "unwatched":
 			return item.watched
 				? tab === "books" || tab === "comics"

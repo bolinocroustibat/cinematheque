@@ -3,8 +3,8 @@ import {
 	getDetailsWithCredits,
 	getRecommendations,
 	searchTMDB,
-} from "@/api/tmdb.js"
-import { getPosterUrl } from "@/utils/poster.js"
+} from "@/api/tmdb"
+import { getPosterUrl } from "@/utils/poster"
 
 const Suggestions = ({ item, type, existingIds, onAdd }) => {
 	const [suggestions, setSuggestions] = useState([])

@@ -1,5 +1,5 @@
 import Suggestions from "@/components/Suggestions.jsx"
-import { getLargePoster } from "@/utils/poster.js"
+import { getLargePoster } from "@/utils/poster"
 
 const ItemModal = ({
 	item,
