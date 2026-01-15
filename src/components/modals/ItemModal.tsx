@@ -1,4 +1,4 @@
-import Suggestions from "@/components/Suggestions"
+import Suggestions from "@/components/features/Suggestions"
 import type { Item, TabType } from "@/types"
 import { getLargePoster } from "@/utils/poster"
 
