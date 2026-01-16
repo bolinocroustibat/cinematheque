@@ -77,7 +77,12 @@ cp .env.example .env
 
 ### Installation
 
-1. Install dependencies:
+1. Navigate to the frontend directory:
+```bash
+cd frontend
+```
+
+2. Install dependencies:
 
 **With Bun (recommended):**
 ```bash
@@ -94,7 +99,7 @@ pnpm install
 npm install
 ```
 
-2. Start the development server:
+3. Start the development server:
 ```bash
 # With Bun
 bun run dev
@@ -113,6 +118,8 @@ npm run dev
 To build the application for production:
 
 ```bash
+cd frontend
+
 # With Bun
 bun run build
 
@@ -123,13 +130,15 @@ pnpm build
 npm run build
 ```
 
-Files will be generated in the `dist/` folder.
+Files will be generated in the `frontend/dist/` folder.
 
 ### Preview Production Build
 
 To test the production build locally:
 
 ```bash
+cd frontend
+
 # With Bun
 bun run preview
 
@@ -148,13 +157,14 @@ npm run preview
 
 ## 📁 Project Structure
 
-- `src/` - React source code
-  - `components/` - React components
-  - `api/` - API calls
-  - `utils/` - Utilities
-- `public/` - Static files (CSS, manifest, etc.)
-- `index.html` - HTML entry point
-- `vite.config.js` - Vite configuration
-- `Dockerfile` - Docker configuration
+- `frontend/` - Application code
+  - `src/` - React source code
+    - `components/` - React components
+    - `api/` - API calls
+    - `utils/` - Utilities
+  - `public/` - Static files (CSS, manifest, etc.)
+  - `index.html` - HTML entry point (in root or frontend)
+  - `vite.config.ts` - Vite configuration
+  - `Dockerfile` - Docker configuration
+  - `server.ts` - Bun server for production
 - `docker-compose.yaml` - Docker Compose configuration
-- `server.js` - Bun server for production

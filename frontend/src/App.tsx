@@ -1,8 +1,8 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react"
 import {
-	loadFromSheets as loadFromSheetsAPI,
-	saveToSheets as saveToSheetsAPI,
-} from "@/api/sheets.js"
+	loadFromAPI as loadFromSheetsAPI,
+	saveToAPI as saveToSheetsAPI,
+} from "@/api/api.js"
 import { fetchPoster } from "@/api/tmdb"
 import AddModal from "@/components/modals/AddModal"
 import EditModal from "@/components/modals/EditModal"

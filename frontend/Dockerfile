@@ -14,12 +14,12 @@ COPY . .
 # Build arguments for environment variables
 ARG VITE_TMDB_KEY
 ARG VITE_OMDB_KEY
-ARG VITE_SHEETS_API
+ARG VITE_API_URL
 
 # Set environment variables for build
 ENV VITE_TMDB_KEY=${VITE_TMDB_KEY}
 ENV VITE_OMDB_KEY=${VITE_OMDB_KEY}
-ENV VITE_SHEETS_API=${VITE_SHEETS_API}
+ENV VITE_API_URL=${VITE_API_URL}
 
 # Build the application (Vite outputs to dist/)
 RUN bun run build

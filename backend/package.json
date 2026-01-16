@@ -1,0 +1,15 @@
+{
+  "name": "cinematheque-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run server.ts",
+    "start": "bun run server.ts",
+    "init-db": "bun run init-db.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^20.0.0"
+  }
+}

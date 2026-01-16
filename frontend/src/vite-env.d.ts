@@ -3,7 +3,7 @@
 interface ImportMetaEnv {
 	readonly VITE_TMDB_KEY: string
 	readonly VITE_OMDB_KEY: string
-	readonly VITE_SHEETS_API: string
+	readonly VITE_API_URL: string
 }
 
 interface ImportMeta {
