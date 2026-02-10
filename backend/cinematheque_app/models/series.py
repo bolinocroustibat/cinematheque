@@ -28,6 +28,7 @@ class Series(MediaItem):
         blank=True,
         help_text="Showrunner or creator of the series.",
     )
+    country = models.CharField(max_length=255, null=True, blank=True)
 
     class Meta:
         db_table = "series"

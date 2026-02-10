@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -9,6 +10,24 @@ class MediaItem(models.Model):
     """
 
     title = models.CharField(max_length=255, null=False, blank=False)
+    recommendation_source = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text="Where this item was recommended from (e.g. friend, review site).",
+    )
+    poster = models.URLField(
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text="URL of the poster or cover image.",
+    )
+    rating = models.IntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Personal rating from 1 to 5.",
+    )
     scan_status = models.CharField(
         max_length=1000,
         null=True,
