@@ -9,8 +9,10 @@ const mapConsumedAt = (item: {
 	consumed_at?: string | null
 	watched?: unknown
 }): string | null => {
-	if (item.consumed_at != null && item.consumed_at !== "") return item.consumed_at
-	if (item.watched === "true" || item.watched === true) return new Date().toISOString()
+	if (item.consumed_at != null && item.consumed_at !== "")
+		return item.consumed_at
+	if (item.watched === "true" || item.watched === true)
+		return new Date().toISOString()
 	return null
 }
 
@@ -21,9 +23,12 @@ export const loadFromAPI = async () => {
 		fetch(`${API_URL}/api/books`),
 	])
 
-	if (!moviesRes.ok) throw new Error(`Failed to load movies: ${moviesRes.statusText}`)
-	if (!seriesRes.ok) throw new Error(`Failed to load series: ${seriesRes.statusText}`)
-	if (!booksRes.ok) throw new Error(`Failed to load books: ${booksRes.statusText}`)
+	if (!moviesRes.ok)
+		throw new Error(`Failed to load movies: ${moviesRes.statusText}`)
+	if (!seriesRes.ok)
+		throw new Error(`Failed to load series: ${seriesRes.statusText}`)
+	if (!booksRes.ok)
+		throw new Error(`Failed to load books: ${booksRes.statusText}`)
 
 	const [moviesData, seriesData, booksData] = await Promise.all([
 		moviesRes.json(),
@@ -37,12 +42,16 @@ export const loadFromAPI = async () => {
 			title: String(m.title ?? ""),
 			director: m.director != null ? String(m.director) : undefined,
 			year: toNum(m.year),
-			consumed_at: mapConsumedAt(m as { consumed_at?: string | null; watched?: unknown }),
+			consumed_at: mapConsumedAt(
+				m as { consumed_at?: string | null; watched?: unknown },
+			),
 			poster: m.poster != null ? String(m.poster) : undefined,
 			rating: m.rating != null ? toNum(m.rating) : undefined,
 			genre: m.genre != null ? String(m.genre) : undefined,
 			recommendation_source:
-				m.recommendation_source != null ? String(m.recommendation_source) : undefined,
+				m.recommendation_source != null
+					? String(m.recommendation_source)
+					: undefined,
 			country: m.country != null ? String(m.country) : undefined,
 			actors: m.actors != null ? String(m.actors) : undefined,
 		}),
@@ -54,12 +63,16 @@ export const loadFromAPI = async () => {
 			title: String(s.title ?? ""),
 			creator: s.creator != null ? String(s.creator) : undefined,
 			year: toNum(s.year),
-			consumed_at: mapConsumedAt(s as { consumed_at?: string | null; watched?: unknown }),
+			consumed_at: mapConsumedAt(
+				s as { consumed_at?: string | null; watched?: unknown },
+			),
 			poster: s.poster != null ? String(s.poster) : undefined,
 			rating: s.rating != null ? toNum(s.rating) : undefined,
 			genre: s.genre != null ? String(s.genre) : undefined,
 			recommendation_source:
-				s.recommendation_source != null ? String(s.recommendation_source) : undefined,
+				s.recommendation_source != null
+					? String(s.recommendation_source)
+					: undefined,
 			country: s.country != null ? String(s.country) : undefined,
 			actors: s.actors != null ? String(s.actors) : undefined,
 			seasons: s.seasons != null ? toNum(s.seasons) : undefined,
@@ -73,17 +86,25 @@ export const loadFromAPI = async () => {
 			author: b.author != null ? String(b.author) : undefined,
 			year: toNum(b.year),
 			type: (b.type === "comic" ? "comic" : "book") as "book" | "comic",
-			consumed_at: mapConsumedAt(b as { consumed_at?: string | null; watched?: unknown }),
+			consumed_at: mapConsumedAt(
+				b as { consumed_at?: string | null; watched?: unknown },
+			),
 			poster: b.poster != null ? String(b.poster) : undefined,
 			rating: b.rating != null ? toNum(b.rating) : undefined,
 			genre: b.genre != null ? String(b.genre) : undefined,
 			recommendation_source:
-				b.recommendation_source != null ? String(b.recommendation_source) : undefined,
+				b.recommendation_source != null
+					? String(b.recommendation_source)
+					: undefined,
 		}),
 	)
 
-	const loadedBooks = allBooks.filter((b: { type: string }) => b.type === "book")
-	const loadedComics = allBooks.filter((b: { type: string }) => b.type === "comic")
+	const loadedBooks = allBooks.filter(
+		(b: { type: string }) => b.type === "book",
+	)
+	const loadedComics = allBooks.filter(
+		(b: { type: string }) => b.type === "comic",
+	)
 
 	return { loadedMovies, loadedSeries, loadedBooks, loadedComics }
 }
@@ -112,7 +133,10 @@ export const saveToAPI = async (
 		}),
 	])
 
-	if (!moviesRes.ok) throw new Error(`Failed to save movies: ${moviesRes.statusText}`)
-	if (!seriesRes.ok) throw new Error(`Failed to save series: ${seriesRes.statusText}`)
-	if (!booksRes.ok) throw new Error(`Failed to save books: ${booksRes.statusText}`)
+	if (!moviesRes.ok)
+		throw new Error(`Failed to save movies: ${moviesRes.statusText}`)
+	if (!seriesRes.ok)
+		throw new Error(`Failed to save series: ${seriesRes.statusText}`)
+	if (!booksRes.ok)
+		throw new Error(`Failed to save books: ${booksRes.statusText}`)
 }

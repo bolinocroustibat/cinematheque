@@ -179,7 +179,9 @@ const Header = ({
 								: "Auteur"}
 					</option>
 					<option value="added">Récents</option>
-					<option value="unwatched">{isReadType ? "Non lus" : "Non vus"}</option>
+					<option value="unwatched">
+						{isReadType ? "Non lus" : "Non vus"}
+					</option>
 				</select>
 				<div className="view-controls">
 					<button

@@ -1,6 +1,6 @@
-import { serve, type BunFile } from "bun"
-import { dirname, extname, join } from "path"
-import { fileURLToPath } from "url"
+import { dirname, extname, join } from "node:path"
+import { fileURLToPath } from "node:url"
+import { type BunFile, serve } from "bun"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)

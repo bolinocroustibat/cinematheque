@@ -1,12 +1,12 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react"
 import { loadFromAPI, saveToAPI } from "@/api/api"
 import { fetchPoster } from "@/api/tmdb"
+import ItemCard from "@/components/items/ItemCard"
+import ItemListRow from "@/components/items/ItemListRow"
+import Header from "@/components/layout/Header"
 import AddModal from "@/components/modals/AddModal"
 import EditModal from "@/components/modals/EditModal"
 import FixPosterModal from "@/components/modals/FixPosterModal"
-import Header from "@/components/layout/Header"
-import ItemCard from "@/components/items/ItemCard"
-import ItemListRow from "@/components/items/ItemListRow"
 import ItemModal from "@/components/modals/ItemModal"
 import type {
 	Book,
@@ -22,7 +22,9 @@ import { getGroupKey, sortItems } from "@/utils/sorting"
 
 const App = () => {
 	const [tab, setTab] = useState<TabType>("films")
-	const normalizeConsumedAt = <T extends { consumed_at?: string | null; watched?: boolean }>(
+	const normalizeConsumedAt = <
+		T extends { consumed_at?: string | null; watched?: boolean },
+	>(
 		item: T,
 	): Omit<T, "watched"> & { consumed_at: string | null } => {
 		const { watched, ...rest } = item
@@ -137,12 +139,7 @@ const App = () => {
 			if (missingPosters > 0) {
 				const updatedMovies = await fetchMissingPosters(loadedMovies)
 				setMovies(updatedMovies)
-				await saveToAPI(
-					updatedMovies,
-					loadedSeries,
-					loadedBooks,
-					loadedComics,
-				)
+				await saveToAPI(updatedMovies, loadedSeries, loadedBooks, loadedComics)
 			}
 		} catch (e) {
 			console.error("Erreur chargement:", e)
@@ -293,9 +290,7 @@ const App = () => {
 		if (selected?.id === id)
 			setSelected({
 				...selected,
-				consumed_at: isConsumed(selected)
-					? null
-					: new Date().toISOString(),
+				consumed_at: isConsumed(selected) ? null : new Date().toISOString(),
 			})
 
 		// Save to API

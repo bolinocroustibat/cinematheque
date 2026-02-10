@@ -219,7 +219,8 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 		}
 		// Books (book/comic) need a type field
 		if (isBook || type === "comics") {
-			;(base as { type: "book" | "comic" }).type = type === "books" ? "book" : "comic"
+			;(base as { type: "book" | "comic" }).type =
+				type === "books" ? "book" : "comic"
 		}
 		onAdd(base as unknown as Item)
 		onClose()
@@ -405,7 +406,10 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 										type="text"
 										value={form.recommendation_source}
 										onChange={(e) =>
-											setForm({ ...form, recommendation_source: e.target.value })
+											setForm({
+												...form,
+												recommendation_source: e.target.value,
+											})
 										}
 										placeholder="Reco ami..."
 									/>

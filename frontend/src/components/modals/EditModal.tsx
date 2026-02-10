@@ -156,7 +156,9 @@ const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
 								<input
 									type="text"
 									value={form.recommendation_source}
-									onChange={(e) => setForm({ ...form, recommendation_source: e.target.value })}
+									onChange={(e) =>
+										setForm({ ...form, recommendation_source: e.target.value })
+									}
 									placeholder="Reco ami..."
 								/>
 							</label>

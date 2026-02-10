@@ -34,7 +34,8 @@ export const sortItems = (list: Item[], sort: SortType): Item[] => {
 			return sorted.sort((a, b) => (b.id || 0) - (a.id || 0))
 		case "unwatched":
 			return sorted.sort((a, b) => {
-				if (isConsumed(a) === isConsumed(b)) return (b.year || 0) - (a.year || 0)
+				if (isConsumed(a) === isConsumed(b))
+					return (b.year || 0) - (a.year || 0)
 				return isConsumed(a) ? 1 : -1
 			})
 		default:
