@@ -1,8 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react"
-import {
-	loadFromSheets as loadFromSheetsAPI,
-	saveToSheets as saveToSheetsAPI,
-} from "@/api/sheets.js"
+import { loadFromAPI, saveToAPI } from "@/api/api"
 import { fetchPoster } from "@/api/tmdb"
 import AddModal from "@/components/modals/AddModal"
 import EditModal from "@/components/modals/EditModal"
@@ -11,7 +8,15 @@ import Header from "@/components/layout/Header"
 import ItemCard from "@/components/items/ItemCard"
 import ItemListRow from "@/components/items/ItemListRow"
 import ItemModal from "@/components/modals/ItemModal"
-import type { FilterType, Item, SortType, TabType, ViewType } from "@/types"
+import type {
+	Book,
+	BookType,
+	FilterType,
+	Item,
+	SortType,
+	TabType,
+	ViewType,
+} from "@/types"
 import { getGroupKey, sortItems } from "@/utils/sorting"
 
 const App = () => {
@@ -24,13 +29,21 @@ const App = () => {
 		const cached = localStorage.getItem("cine_series_cache")
 		return cached ? JSON.parse(cached) : []
 	})
-	const [books, setBooks] = useState<Item[]>(() => {
+	const [books, setBooks] = useState<Book[]>(() => {
 		const cached = localStorage.getItem("cine_books_cache")
-		return cached ? JSON.parse(cached) : []
+		const raw = cached ? JSON.parse(cached) : []
+		return raw.map((p: Book & { type?: BookType }) => ({
+			...p,
+			type: p.type ?? "book",
+		}))
 	})
-	const [comics, setComics] = useState<Item[]>(() => {
+	const [comics, setComics] = useState<Book[]>(() => {
 		const cached = localStorage.getItem("cine_comics_cache")
-		return cached ? JSON.parse(cached) : []
+		const raw = cached ? JSON.parse(cached) : []
+		return raw.map((p: Book & { type?: BookType }) => ({
+			...p,
+			type: p.type ?? "comic",
+		}))
 	})
 	const [search, setSearch] = useState("")
 	const [filter, setFilter] = useState<FilterType>("all")
@@ -90,13 +103,12 @@ const App = () => {
 		return updated
 	}, [])
 
-	const loadFromSheets = useCallback(async () => {
+	const loadFromBackend = useCallback(async () => {
 		setSyncing(true)
 		try {
 			const { loadedFilms, loadedSeries, loadedBooks, loadedComics } =
-				await loadFromSheetsAPI()
+				await loadFromAPI()
 
-			// Mettre à jour immédiatement avec les données du serveur
 			setFilms(loadedFilms)
 			setSeries(loadedSeries)
 			setBooks(loadedBooks)
@@ -105,14 +117,11 @@ const App = () => {
 			setSyncing(false)
 			setLastSync(new Date())
 
-			// Check if we need to fetch posters (en arrière-plan)
 			const missingPosters = loadedFilms.filter((f: Item) => !f.poster).length
-
 			if (missingPosters > 0) {
 				const updatedFilms = await fetchMissingPosters(loadedFilms)
 				setFilms(updatedFilms)
-				// Save updated films with posters to Sheets
-				await saveToSheetsAPI(
+				await saveToAPI(
 					updatedFilms,
 					loadedSeries,
 					loadedBooks,
@@ -126,12 +135,12 @@ const App = () => {
 		}
 	}, [fetchMissingPosters])
 
-	// Load from Google Sheets on mount
+	// Load from API on mount
 	useEffect(() => {
 		const cached = localStorage.getItem("cine_films_cache")
 		if (!cached) setLoading(true)
-		loadFromSheets()
-	}, [loadFromSheets])
+		loadFromBackend()
+	}, [loadFromBackend])
 
 	// Save to cache whenever data changes
 	useEffect(() => {
@@ -158,25 +167,21 @@ const App = () => {
 		}
 	}, [comics])
 
-	const saveToSheets = async (
+	const saveToBackend = async (
 		newFilms?: Item[],
 		newSeries?: Item[],
-		newBooks?: Item[],
-		newComics?: Item[],
+		newBooks?: Book[],
+		newComics?: Book[],
 	) => {
 		setSyncing(true)
 		try {
-			await saveToSheetsAPI(
+			await saveToAPI(
 				newFilms !== undefined ? newFilms : films,
 				newSeries !== undefined ? newSeries : series,
 				newBooks !== undefined ? newBooks : books,
 				newComics !== undefined ? newComics : comics,
 			)
 			setLastSync(new Date())
-
-			// Also save to localStorage as backup
-			localStorage.setItem("cine_films", JSON.stringify(newFilms || films))
-			localStorage.setItem("cine_series", JSON.stringify(newSeries || series))
 		} catch (e) {
 			console.error("Erreur sauvegarde:", e)
 		}
@@ -247,10 +252,10 @@ const App = () => {
 	const saveAll = (
 		newFilms?: Item[],
 		newSeries?: Item[],
-		newBooks?: Item[],
-		newComics?: Item[],
+		newBooks?: Book[],
+		newComics?: Book[],
 	) => {
-		saveToSheets(
+		saveToBackend(
 			newFilms !== undefined ? newFilms : films,
 			newSeries !== undefined ? newSeries : series,
 			newBooks !== undefined ? newBooks : books,
@@ -267,7 +272,7 @@ const App = () => {
 		if (selected?.id === id)
 			setSelected({ ...selected, watched: !selected.watched })
 
-		// Save to sheets
+		// Save to API
 		if (tab === "films") saveAll(newItems, undefined, undefined, undefined)
 		else if (tab === "series")
 			saveAll(undefined, newItems, undefined, undefined)

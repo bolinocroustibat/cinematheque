@@ -4,6 +4,9 @@ export type TabType = "films" | "series" | "books" | "comics"
 // Item type identifiers (used in storage/API)
 export type ItemType = "film" | "series" | "book" | "comic"
 
+// Book subtype (book or comic)
+export type BookType = "book" | "comic"
+
 // Base item - common fields for all collection items
 export interface BaseItem {
 	id: number // Unique identifier (timestamp-based)
@@ -31,18 +34,14 @@ export interface Series extends BaseItem {
 	seasons?: number
 }
 
-// Book item
+// Book item (book or comic), distinguished by type field
 export interface Book extends BaseItem {
-	author?: string
-}
-
-// Comic item
-export interface Comic extends BaseItem {
+	type: BookType
 	author?: string
 }
 
 // Any collection item
-export type Item = Film | Series | Book | Comic
+export type Item = Film | Series | Book
 
 // Item with type field (used for storage/API)
 export type StoredItem = Item & { type: ItemType }

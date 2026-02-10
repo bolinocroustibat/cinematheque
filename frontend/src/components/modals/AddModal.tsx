@@ -209,12 +209,17 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault()
 		if (!form.title) return
-		onAdd({
+		const base = {
 			...form,
 			id: Date.now(),
 			year: parseInt(form.year, 10) || new Date().getFullYear(),
 			seasons: form.seasons ? parseInt(form.seasons, 10) : undefined,
-		} as unknown as Item)
+		}
+		// Books (book/comic) need a type field
+		if (isBook || type === "comics") {
+			;(base as { type: "book" | "comic" }).type = type === "books" ? "book" : "comic"
+		}
+		onAdd(base as unknown as Item)
 		onClose()
 	}
 

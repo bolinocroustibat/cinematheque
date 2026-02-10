@@ -1,6 +1,11 @@
-export const loadFromSheets = async () => {
-	const SHEETS_API = import.meta.env.VITE_SHEETS_API || ""
-	const res = await fetch(SHEETS_API)
+// API client for backend
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000"
+
+export const loadFromAPI = async () => {
+	const res = await fetch(`${API_URL}/api/items`)
+	if (!res.ok) {
+		throw new Error(`Failed to load items: ${res.statusText}`)
+	}
 	const data = await res.json()
 
 	const loadedFilms = data
@@ -26,6 +31,7 @@ export const loadFromSheets = async () => {
 		.filter((item) => item.type === "book")
 		.map((item) => ({
 			...item,
+			type: "book" as const,
 			id: parseInt(item.id, 10) || item.id,
 			year: parseInt(item.year, 10) || 0,
 			watched: item.watched === "true" || item.watched === true,
@@ -35,6 +41,7 @@ export const loadFromSheets = async () => {
 		.filter((item) => item.type === "comic")
 		.map((item) => ({
 			...item,
+			type: "comic" as const,
 			id: parseInt(item.id, 10) || item.id,
 			year: parseInt(item.year, 10) || 0,
 			watched: item.watched === "true" || item.watched === true,
@@ -43,7 +50,7 @@ export const loadFromSheets = async () => {
 	return { loadedFilms, loadedSeries, loadedBooks, loadedComics }
 }
 
-export const saveToSheets = async (films, series, books, comics) => {
+export const saveToAPI = async (films, series, books, comics) => {
 	const allData = [
 		...films.map((f) => ({ ...f, type: "film" })),
 		...series.map((s) => ({ ...s, type: "series" })),
@@ -51,10 +58,15 @@ export const saveToSheets = async (films, series, books, comics) => {
 		...(comics || []).map((c) => ({ ...c, type: "comic" })),
 	]
 
-	await fetch(SHEETS_API, {
+	const res = await fetch(`${API_URL}/api/items`, {
 		method: "POST",
-		mode: "no-cors",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(allData),
 	})
+
+	if (!res.ok) {
+		throw new Error(`Failed to save items: ${res.statusText}`)
+	}
+
+	return res.json()
 }
