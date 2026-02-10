@@ -1,4 +1,5 @@
 import type { Item } from "@/types"
+import { isConsumed } from "@/types"
 import { getSmallPoster } from "@/utils/poster"
 
 interface ItemListRowProps {
@@ -16,7 +17,7 @@ const ItemListRow = ({ item, onSelect, onToggleWatch }: ItemListRowProps) => {
 	return (
 		<button
 			type="button"
-			className={`list-item ${item.watched ? "is-watched" : "is-unwatched"}`}
+			className={`list-item ${isConsumed(item) ? "is-watched" : "is-unwatched"}`}
 			onClick={() => onSelect(item)}
 		>
 			{item.poster ? (
@@ -37,11 +38,11 @@ const ItemListRow = ({ item, onSelect, onToggleWatch }: ItemListRowProps) => {
 			</div>
 			{/* biome-ignore lint/a11y/useSemanticElements: styled watch button */}
 			<div
-				className={`watch-btn ${item.watched ? "watched" : ""}`}
+				className={`watch-btn ${isConsumed(item) ? "watched" : ""}`}
 				onClick={(e) => onToggleWatch(item.id, e)}
 				onKeyDown={(e) => e.stopPropagation()}
 				role="checkbox"
-				aria-checked={item.watched}
+				aria-checked={isConsumed(item)}
 				tabIndex={0}
 			>
 				✓

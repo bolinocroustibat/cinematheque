@@ -17,33 +17,49 @@ import type {
 	TabType,
 	ViewType,
 } from "@/types"
+import { isConsumed } from "@/types"
 import { getGroupKey, sortItems } from "@/utils/sorting"
 
 const App = () => {
 	const [tab, setTab] = useState<TabType>("films")
-	const [films, setFilms] = useState<Item[]>(() => {
-		const cached = localStorage.getItem("cine_films_cache")
-		return cached ? JSON.parse(cached) : []
+	const normalizeConsumedAt = <T extends { consumed_at?: string | null; watched?: boolean }>(
+		item: T,
+	): Omit<T, "watched"> & { consumed_at: string | null } => {
+		const { watched, ...rest } = item
+		return {
+			...rest,
+			consumed_at:
+				rest.consumed_at != null && rest.consumed_at !== ""
+					? rest.consumed_at
+					: watched
+						? new Date().toISOString()
+						: null,
+		} as Omit<T, "watched"> & { consumed_at: string | null }
+	}
+
+	const [movies, setMovies] = useState<Item[]>(() => {
+		const cached = localStorage.getItem("cine_movies_cache")
+		const raw = cached ? JSON.parse(cached) : []
+		return raw.map((m: Item & { watched?: boolean }) => normalizeConsumedAt(m))
 	})
 	const [series, setSeries] = useState<Item[]>(() => {
 		const cached = localStorage.getItem("cine_series_cache")
-		return cached ? JSON.parse(cached) : []
+		const raw = cached ? JSON.parse(cached) : []
+		return raw.map((s: Item & { watched?: boolean }) => normalizeConsumedAt(s))
 	})
 	const [books, setBooks] = useState<Book[]>(() => {
 		const cached = localStorage.getItem("cine_books_cache")
 		const raw = cached ? JSON.parse(cached) : []
-		return raw.map((p: Book & { type?: BookType }) => ({
-			...p,
-			type: p.type ?? "book",
-		}))
+		return raw.map((p: Book & { type?: BookType; watched?: boolean }) =>
+			normalizeConsumedAt({ ...p, type: p.type ?? "book" }),
+		)
 	})
 	const [comics, setComics] = useState<Book[]>(() => {
 		const cached = localStorage.getItem("cine_comics_cache")
 		const raw = cached ? JSON.parse(cached) : []
-		return raw.map((p: Book & { type?: BookType }) => ({
-			...p,
-			type: p.type ?? "comic",
-		}))
+		return raw.map((p: Book & { type?: BookType; watched?: boolean }) =>
+			normalizeConsumedAt({ ...p, type: p.type ?? "comic" }),
+		)
 	})
 	const [search, setSearch] = useState("")
 	const [filter, setFilter] = useState<FilterType>("all")
@@ -59,7 +75,7 @@ const App = () => {
 
 	const items =
 		tab === "films"
-			? films
+			? movies
 			: tab === "series"
 				? series
 				: tab === "books"
@@ -67,7 +83,7 @@ const App = () => {
 					: comics
 	const setItems: React.Dispatch<React.SetStateAction<Item[]>> =
 		tab === "films"
-			? setFilms
+			? setMovies
 			: tab === "series"
 				? setSeries
 				: tab === "books"
@@ -77,12 +93,12 @@ const App = () => {
 	const [posterProgress, setPosterProgress] = useState("")
 
 	// Fetch missing posters after loading
-	const fetchMissingPosters = useCallback(async (filmsList: Item[]) => {
-		const needPoster = filmsList.filter((f) => !f.poster)
-		if (needPoster.length === 0) return filmsList
+	const fetchMissingPosters = useCallback(async (moviesList: Item[]) => {
+		const needPoster = moviesList.filter((f) => !f.poster)
+		if (needPoster.length === 0) return moviesList
 
 		setPosterProgress(`0/${needPoster.length}`)
-		const updated = [...filmsList]
+		const updated = [...moviesList]
 		let count = 0
 
 		for (const film of needPoster) {
@@ -106,10 +122,10 @@ const App = () => {
 	const loadFromBackend = useCallback(async () => {
 		setSyncing(true)
 		try {
-			const { loadedFilms, loadedSeries, loadedBooks, loadedComics } =
+			const { loadedMovies, loadedSeries, loadedBooks, loadedComics } =
 				await loadFromAPI()
 
-			setFilms(loadedFilms)
+			setMovies(loadedMovies)
 			setSeries(loadedSeries)
 			setBooks(loadedBooks)
 			setComics(loadedComics)
@@ -117,12 +133,12 @@ const App = () => {
 			setSyncing(false)
 			setLastSync(new Date())
 
-			const missingPosters = loadedFilms.filter((f: Item) => !f.poster).length
+			const missingPosters = loadedMovies.filter((f: Item) => !f.poster).length
 			if (missingPosters > 0) {
-				const updatedFilms = await fetchMissingPosters(loadedFilms)
-				setFilms(updatedFilms)
+				const updatedMovies = await fetchMissingPosters(loadedMovies)
+				setMovies(updatedMovies)
 				await saveToAPI(
-					updatedFilms,
+					updatedMovies,
 					loadedSeries,
 					loadedBooks,
 					loadedComics,
@@ -137,17 +153,17 @@ const App = () => {
 
 	// Load from API on mount
 	useEffect(() => {
-		const cached = localStorage.getItem("cine_films_cache")
+		const cached = localStorage.getItem("cine_movies_cache")
 		if (!cached) setLoading(true)
 		loadFromBackend()
 	}, [loadFromBackend])
 
 	// Save to cache whenever data changes
 	useEffect(() => {
-		if (films.length > 0) {
-			localStorage.setItem("cine_films_cache", JSON.stringify(films))
+		if (movies.length > 0) {
+			localStorage.setItem("cine_movies_cache", JSON.stringify(movies))
 		}
-	}, [films])
+	}, [movies])
 
 	useEffect(() => {
 		if (series.length > 0) {
@@ -168,7 +184,7 @@ const App = () => {
 	}, [comics])
 
 	const saveToBackend = async (
-		newFilms?: Item[],
+		newMovies?: Item[],
 		newSeries?: Item[],
 		newBooks?: Book[],
 		newComics?: Book[],
@@ -176,7 +192,7 @@ const App = () => {
 		setSyncing(true)
 		try {
 			await saveToAPI(
-				newFilms !== undefined ? newFilms : films,
+				newMovies !== undefined ? newMovies : movies,
 				newSeries !== undefined ? newSeries : series,
 				newBooks !== undefined ? newBooks : books,
 				newComics !== undefined ? newComics : comics,
@@ -215,8 +231,8 @@ const App = () => {
 				)
 			)
 				return false
-			if (filter === "watched" && !f.watched) return false
-			if (filter === "unwatched" && f.watched) return false
+			if (filter === "watched" && !isConsumed(f)) return false
+			if (filter === "unwatched" && isConsumed(f)) return false
 			if (genre && !f.genre?.toLowerCase().includes(genre.toLowerCase()))
 				return false
 			return true
@@ -246,17 +262,17 @@ const App = () => {
 
 	const stats = {
 		total: items.length,
-		watched: items.filter((f) => f.watched).length,
+		watched: items.filter((f) => isConsumed(f)).length,
 	}
 
 	const saveAll = (
-		newFilms?: Item[],
+		newMovies?: Item[],
 		newSeries?: Item[],
 		newBooks?: Book[],
 		newComics?: Book[],
 	) => {
 		saveToBackend(
-			newFilms !== undefined ? newFilms : films,
+			newMovies !== undefined ? newMovies : movies,
 			newSeries !== undefined ? newSeries : series,
 			newBooks !== undefined ? newBooks : books,
 			newComics !== undefined ? newComics : comics,
@@ -266,11 +282,21 @@ const App = () => {
 	const toggleWatch = (id: number, e?: React.MouseEvent) => {
 		if (e) e.stopPropagation()
 		const newItems = items.map((f) =>
-			f.id === id ? { ...f, watched: !f.watched } : f,
+			f.id === id
+				? {
+						...f,
+						consumed_at: isConsumed(f) ? null : new Date().toISOString(),
+					}
+				: f,
 		)
 		setItems(newItems)
 		if (selected?.id === id)
-			setSelected({ ...selected, watched: !selected.watched })
+			setSelected({
+				...selected,
+				consumed_at: isConsumed(selected)
+					? null
+					: new Date().toISOString(),
+			})
 
 		// Save to API
 		if (tab === "films") saveAll(newItems, undefined, undefined, undefined)
@@ -350,7 +376,7 @@ const App = () => {
 		else saveAll(undefined, undefined, undefined, newItems)
 	}
 
-	if (loading && films.length === 0) {
+	if (loading && movies.length === 0) {
 		return (
 			<div className="loading-screen">
 				<div className="loading-spinner" />
@@ -369,7 +395,7 @@ const App = () => {
 				tab={tab}
 				onTabChange={setTab}
 				counts={{
-					films: films.length,
+					movies: movies.length,
 					series: series.length,
 					books: books.length,
 					comics: comics.length,

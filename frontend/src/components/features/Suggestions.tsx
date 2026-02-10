@@ -160,7 +160,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 					year: parseInt(sug.year, 10) || 0,
 					poster: sug.poster,
 					genre: details.genres?.map((g) => g.name).join(", ") || "",
-					watched: false,
+					consumed_at: null,
 				}
 
 				if (type === "films") {
@@ -200,7 +200,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 					poster:
 						info.imageLinks?.thumbnail?.replace("http:", "https:") ||
 						sug.poster,
-					watched: false,
+					consumed_at: null,
 				}
 
 				onAdd(newItem as unknown as Item)

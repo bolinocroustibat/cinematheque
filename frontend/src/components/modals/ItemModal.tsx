@@ -1,5 +1,6 @@
 import Suggestions from "@/components/features/Suggestions"
 import type { Item, TabType } from "@/types"
+import { isConsumed } from "@/types"
 import { getLargePoster } from "@/utils/poster"
 
 interface ItemModalProps {
@@ -98,19 +99,19 @@ const ItemModal = ({
 							<p>{item.actors}</p>
 						</div>
 					)}
-					{item.source && (
+					{item.recommendation_source && (
 						<div className="modal-section">
-							<h4>Source</h4>
-							<p>{item.source}</p>
+							<h4>Recommandation</h4>
+							<p>{item.recommendation_source}</p>
 						</div>
 					)}
 					<div className="modal-buttons">
 						<button
 							type="button"
-							className={`btn ${item.watched ? "btn-primary" : "btn-secondary"}`}
+							className={`btn ${isConsumed(item) ? "btn-primary" : "btn-secondary"}`}
 							onClick={() => onToggleWatch(item.id)}
 						>
-							{item.watched
+							{isConsumed(item)
 								? tab === "books" || tab === "comics"
 									? "✓ Lu"
 									: "✓ Vu"

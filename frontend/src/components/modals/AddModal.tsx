@@ -16,7 +16,7 @@ interface FormState {
 	author: string
 	year: string
 	genre: string
-	source: string
+	recommendation_source: string
 	watched: boolean
 	poster: string
 	seasons: string
@@ -49,7 +49,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 		author: "",
 		year: "",
 		genre: "",
-		source: "",
+		recommendation_source: "",
 		watched: false,
 		poster: "",
 		seasons: "",
@@ -154,7 +154,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 								.map((a) => a.name)
 								.join(", ") || "",
 						country: details.production_countries?.[0]?.name || "",
-						source: "",
+						recommendation_source: "",
 						watched: false,
 						poster: getPosterUrl(item.poster_path) || "",
 						seasons: "",
@@ -174,7 +174,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 								.join(", ") || "",
 						country: details.origin_country?.[0] || "",
 						seasons: String(details.number_of_seasons || ""),
-						source: "",
+						recommendation_source: "",
 						watched: false,
 						poster: getPosterUrl(item.poster_path) || "",
 					})
@@ -195,7 +195,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 				author: item.author || "",
 				year: item.year || "",
 				genre: item.genre || "",
-				source: "",
+				recommendation_source: "",
 				watched: false,
 				poster: item.poster || "",
 				seasons: "",
@@ -209,11 +209,13 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault()
 		if (!form.title) return
+		const { watched, ...rest } = form
 		const base = {
-			...form,
+			...rest,
 			id: Date.now(),
 			year: parseInt(form.year, 10) || new Date().getFullYear(),
 			seasons: form.seasons ? parseInt(form.seasons, 10) : undefined,
+			consumed_at: watched ? new Date().toISOString() : null,
 		}
 		// Books (book/comic) need a type field
 		if (isBook || type === "comics") {
@@ -401,9 +403,9 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 									<span>Source / Reco</span>
 									<input
 										type="text"
-										value={form.source}
+										value={form.recommendation_source}
 										onChange={(e) =>
-											setForm({ ...form, source: e.target.value })
+											setForm({ ...form, recommendation_source: e.target.value })
 										}
 										placeholder="Reco ami..."
 									/>

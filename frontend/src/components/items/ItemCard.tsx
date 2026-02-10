@@ -1,4 +1,5 @@
 import type { Item } from "@/types"
+import { isConsumed } from "@/types"
 import { getSmallPoster } from "@/utils/poster"
 
 interface ItemCardProps {
@@ -11,7 +12,7 @@ const ItemCard = ({ item, onSelect, onToggleWatch }: ItemCardProps) => {
 	return (
 		<button
 			type="button"
-			className={`card ${item.watched ? "is-watched" : "is-unwatched"}`}
+			className={`card ${isConsumed(item) ? "is-watched" : "is-unwatched"}`}
 			onClick={() => onSelect(item)}
 		>
 			{item.poster ? (
@@ -35,11 +36,11 @@ const ItemCard = ({ item, onSelect, onToggleWatch }: ItemCardProps) => {
 			)}
 			{/* biome-ignore lint/a11y/useSemanticElements: styled watch button */}
 			<div
-				className={`watch-btn ${item.watched ? "watched" : ""}`}
+				className={`watch-btn ${isConsumed(item) ? "watched" : ""}`}
 				onClick={(e) => onToggleWatch(item.id, e)}
 				onKeyDown={(e) => e.stopPropagation()}
 				role="checkbox"
-				aria-checked={item.watched}
+				aria-checked={isConsumed(item)}
 				tabIndex={0}
 			>
 				✓

@@ -10,7 +10,7 @@ interface HeaderProps {
 	// Tabs
 	tab: TabType
 	onTabChange: (tab: TabType) => void
-	counts: { films: number; series: number; books: number; comics: number }
+	counts: { movies: number; series: number; books: number; comics: number }
 
 	// Search & Filters
 	search: string
@@ -99,7 +99,7 @@ const Header = ({
 					className={`tab ${tab === "films" ? "active" : ""}`}
 					onClick={() => handleTabChange("films")}
 				>
-					Films <span className="tab-count">{counts.films}</span>
+					Movies <span className="tab-count">{counts.movies}</span>
 				</button>
 				<button
 					type="button"

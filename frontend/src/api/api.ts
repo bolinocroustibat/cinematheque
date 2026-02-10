@@ -8,13 +8,20 @@ export const loadFromAPI = async () => {
 	}
 	const data = await res.json()
 
-	const loadedFilms = data
+	const toConsumedAt = (item: { consumed_at?: string | null; watched?: unknown }) =>
+		item.consumed_at != null && item.consumed_at !== ""
+			? item.consumed_at
+			: item.watched === "true" || item.watched === true
+				? new Date().toISOString()
+				: null
+
+	const loadedMovies = data
 		.filter((item) => item.type === "film" || !item.type)
 		.map((item) => ({
 			...item,
 			id: parseInt(item.id, 10) || item.id,
 			year: parseInt(item.year, 10) || 0,
-			watched: item.watched === "true" || item.watched === true,
+			consumed_at: toConsumedAt(item),
 		}))
 
 	const loadedSeries = data
@@ -24,7 +31,7 @@ export const loadFromAPI = async () => {
 			id: parseInt(item.id, 10) || item.id,
 			year: parseInt(item.year, 10) || 0,
 			seasons: parseInt(item.seasons, 10) || 0,
-			watched: item.watched === "true" || item.watched === true,
+			consumed_at: toConsumedAt(item),
 		}))
 
 	const loadedBooks = data
@@ -34,7 +41,7 @@ export const loadFromAPI = async () => {
 			type: "book" as const,
 			id: parseInt(item.id, 10) || item.id,
 			year: parseInt(item.year, 10) || 0,
-			watched: item.watched === "true" || item.watched === true,
+			consumed_at: toConsumedAt(item),
 		}))
 
 	const loadedComics = data
@@ -44,15 +51,15 @@ export const loadFromAPI = async () => {
 			type: "comic" as const,
 			id: parseInt(item.id, 10) || item.id,
 			year: parseInt(item.year, 10) || 0,
-			watched: item.watched === "true" || item.watched === true,
+			consumed_at: toConsumedAt(item),
 		}))
 
-	return { loadedFilms, loadedSeries, loadedBooks, loadedComics }
+	return { loadedMovies, loadedSeries, loadedBooks, loadedComics }
 }
 
-export const saveToAPI = async (films, series, books, comics) => {
+export const saveToAPI = async (movies, series, books, comics) => {
 	const allData = [
-		...films.map((f) => ({ ...f, type: "film" })),
+		...movies.map((f) => ({ ...f, type: "film" })),
 		...series.map((s) => ({ ...s, type: "series" })),
 		...(books || []).map((b) => ({ ...b, type: "book" })),
 		...(comics || []).map((c) => ({ ...c, type: "comic" })),

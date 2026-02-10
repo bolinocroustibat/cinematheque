@@ -1,4 +1,5 @@
 import type { Item, SortType, TabType } from "@/types"
+import { isConsumed } from "@/types"
 
 export const sortItems = (list: Item[], sort: SortType): Item[] => {
 	const sorted = [...list]
@@ -33,8 +34,8 @@ export const sortItems = (list: Item[], sort: SortType): Item[] => {
 			return sorted.sort((a, b) => (b.id || 0) - (a.id || 0))
 		case "unwatched":
 			return sorted.sort((a, b) => {
-				if (a.watched === b.watched) return (b.year || 0) - (a.year || 0)
-				return a.watched ? 1 : -1
+				if (isConsumed(a) === isConsumed(b)) return (b.year || 0) - (a.year || 0)
+				return isConsumed(a) ? 1 : -1
 			})
 		default:
 			return sorted
@@ -65,7 +66,7 @@ export const getGroupKey = (
 			return val[0]?.toUpperCase() || "#"
 		}
 		case "unwatched":
-			return item.watched
+			return isConsumed(item)
 				? tab === "books" || tab === "comics"
 					? "Lus"
 					: "Vus"

@@ -1,5 +1,6 @@
 import { useState } from "react"
 import type { Item, TabType } from "@/types"
+import { isConsumed } from "@/types"
 
 interface EditModalProps {
 	item: Item
@@ -17,7 +18,7 @@ interface FormState {
 	genre: string
 	actors: string
 	country: string
-	source: string
+	recommendation_source: string
 	seasons: string | number
 	watched: boolean
 	rating: number
@@ -37,20 +38,24 @@ const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
 		genre: item.genre || "",
 		actors: "actors" in item ? item.actors || "" : "",
 		country: "country" in item ? item.country || "" : "",
-		source: item.source || "",
+		recommendation_source: item.recommendation_source || "",
 		seasons: "seasons" in item ? item.seasons || "" : "",
-		watched: item.watched || false,
+		watched: isConsumed(item),
 		rating: item.rating || 0,
 	})
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault()
 		if (!form.title) return
+		const { watched, ...rest } = form
 		onSave(item.id, {
-			...form,
+			...rest,
 			year: parseInt(String(form.year), 10) || item.year,
 			seasons: form.seasons ? parseInt(String(form.seasons), 10) : undefined,
 			rating: form.rating || undefined,
+			consumed_at: watched
+				? item.consumed_at || new Date().toISOString()
+				: null,
 		} as Partial<Item>)
 	}
 
@@ -150,8 +155,8 @@ const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
 								<span>Source / Reco</span>
 								<input
 									type="text"
-									value={form.source}
-									onChange={(e) => setForm({ ...form, source: e.target.value })}
+									value={form.recommendation_source}
+									onChange={(e) => setForm({ ...form, recommendation_source: e.target.value })}
 									placeholder="Reco ami..."
 								/>
 							</label>

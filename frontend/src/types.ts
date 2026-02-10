@@ -13,14 +13,20 @@ export interface BaseItem {
 	title: string
 	year: number
 	genre?: string // Comma-separated genres
-	source?: string // Recommendation source
-	watched: boolean
+	recommendation_source?: string
+	/** When the item was watched/read; null = not consumed yet. */
+	consumed_at: string | null
 	poster?: string // Poster image URL
-	rating?: number // Rating 1-5 (only if watched)
+	rating?: number // Rating 1-5 (only if consumed)
 }
 
-// Film item
-export interface Film extends BaseItem {
+/** Derived: item is consumed (watched or read) when consumed_at is set. */
+export function isConsumed(item: BaseItem): boolean {
+	return item.consumed_at != null && item.consumed_at !== ""
+}
+
+// Movie item
+export interface Movie extends BaseItem {
 	director?: string
 	actors?: string // Comma-separated
 	country?: string
@@ -41,7 +47,7 @@ export interface Book extends BaseItem {
 }
 
 // Any collection item
-export type Item = Film | Series | Book
+export type Item = Movie | Series | Book
 
 // Item with type field (used for storage/API)
 export type StoredItem = Item & { type: ItemType }
