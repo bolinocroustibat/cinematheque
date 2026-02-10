@@ -149,6 +149,15 @@ pnpm preview
 npm run preview
 ```
 
+### Linting & formatting (Biome)
+
+The frontend uses [Biome](https://biomejs.dev/) for lint and format. From the `frontend/` directory:
+
+- **Check** (lint + format check): `bunx biome check .`
+- **Fix and format**: `bunx biome check --write .` — applies safe fixes and reformats files
+
+Use `--unsafe` with `--write` to also apply fixes Biome considers unsafe (e.g. removing `!important` in CSS).
+
 ## 📜 Available Scripts
 
 - `dev` - Start the Vite development server

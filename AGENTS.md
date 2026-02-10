@@ -12,4 +12,4 @@ App: movies, series, books, comics. Backend API + React frontend.
 
 - **Stack**: React 18, TypeScript, Vite 6. Bun. Biome.
 - **Paths**: `frontend/src/` — `App.tsx`, `api/`, `components/`, `types.ts`, `utils/`. Use `@/` alias.
-- **Conventions**: Data from backend (`VITE_API_URL`) or Sheets. Keep `types.ts` in sync with API. Biome for lint/format.
+- **Conventions**: Data from backend (`VITE_API_URL`) or Sheets. Keep `types.ts` in sync with API. After creating or editing frontend code, lint and format: `bunx biome check --write .` (from `frontend/`).
