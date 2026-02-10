@@ -37,7 +37,7 @@ Create a `.env` file in the project root with your API keys (see [Environment Va
 The required variables are:
 - `VITE_TMDB_KEY` - Your TMDB API key
 - `VITE_OMDB_KEY` - Your OMDb API key (optional)
-- `VITE_SHEETS_API` - Your Google Sheets API URL
+- `VITE_API_URL` - Backend API base URL (e.g. `http://localhost:8000`)
 
 ### Useful Docker Commands
 
@@ -73,7 +73,7 @@ cp .env.example .env
 2. Edit `.env` and fill in your API keys:
    - **VITE_TMDB_KEY**: Get your API key from [TMDB Settings](https://www.themoviedb.org/settings/api)
    - **VITE_OMDB_KEY**: Get your API key from [OMDb API](https://www.omdbapi.com/apikey.aspx) (optional, used as fallback for movie posters)
-   - **VITE_SHEETS_API**: Your Google Apps Script Web App URL
+   - **VITE_API_URL**: Backend API base URL for movies, series, and books (e.g. `http://localhost:8000`)
 
 ### Installation
 
