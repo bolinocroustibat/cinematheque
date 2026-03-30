@@ -2,15 +2,21 @@ services:
   db:
     container_name: cinematheque-db
     image: postgres:18
-    restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\""]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
 
   backend:
     container_name: cinematheque-backend
@@ -56,7 +62,7 @@ services:
     ports:
       - "${APP_PORT:-3000}:3000"
     environment:
-      - VITE_ENV=${VITE_ENV}
+      - VITE_ENV=${VITE_ENV:-local}
     depends_on:
       - backend
 
