@@ -79,7 +79,7 @@ cp .env.example .env
 
 1. Navigate to the frontend directory:
 ```bash
-cd frontend
+cd frontend-cinematheque
 ```
 
 2. Install dependencies:
@@ -118,7 +118,7 @@ npm run dev
 To build the application for production:
 
 ```bash
-cd frontend
+cd frontend-cinematheque
 
 # With Bun
 bun run build
@@ -130,14 +130,14 @@ pnpm build
 npm run build
 ```
 
-Files will be generated in the `frontend/dist/` folder.
+Files will be generated in the `frontend-cinematheque/dist/` folder.
 
 ### Preview Production Build
 
 To test the production build locally:
 
 ```bash
-cd frontend
+cd frontend-cinematheque
 
 # With Bun
 bun run preview
@@ -151,7 +151,7 @@ npm run preview
 
 ### Linting & formatting (Biome)
 
-The frontend uses [Biome](https://biomejs.dev/) for lint and format. From the `frontend/` directory:
+The frontend uses [Biome](https://biomejs.dev/) for lint and format. From the `frontend-cinematheque/` directory:
 
 - **Check** (lint + format check): `bunx biome check .`
 - **Fix and format**: `bunx biome check --write .` — applies safe fixes and reformats files
@@ -166,7 +166,7 @@ Use `--unsafe` with `--write` to also apply fixes Biome considers unsafe (e.g. r
 
 ## 📁 Project Structure
 
-- `frontend/` - Application code
+- `frontend-cinematheque/` - Main React application (movies, series, books, comics)
   - `src/` - React source code
     - `components/` - React components
     - `api/` - API calls

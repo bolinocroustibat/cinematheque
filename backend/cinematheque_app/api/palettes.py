@@ -60,9 +60,13 @@ def get_palettes_by_movie_slug(request, movie_slug: str):
     palettes_data = []
     for palette in movie.color_palettes.all():
         try:
-            colors = json.loads(palette.colors) if palette.colors else []
+            raw_colors = json.loads(palette.colors) if palette.colors else []
         except (json.JSONDecodeError, TypeError):
-            colors = []
+            raw_colors = []
+        colors = [
+            f"#{c[0]:02x}{c[1]:02x}{c[2]:02x}" if isinstance(c, list) else c
+            for c in raw_colors
+        ]
 
         palettes_data.append(
             {

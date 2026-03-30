@@ -23,4 +23,4 @@ EXPOSE 8000
 # Run migrations, collect static files, and start the server
 CMD uv run python manage.py migrate && \
     uv run python manage.py collectstatic --noinput && \
-    exec uv run gunicorn vj_api.asgi:application -w 4 -k uvicorn.workers.UvicornWorker --bind "0.0.0.0:8000"
+    exec uv run gunicorn cinematheque.asgi:application -w 4 -k uvicorn.workers.UvicornWorker --bind "0.0.0.0:8000"
