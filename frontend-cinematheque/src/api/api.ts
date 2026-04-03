@@ -125,6 +125,71 @@ export const loadFromAPI = async () => {
 	}
 }
 
+const POSTER_FILL_BATCH = 25
+const POSTER_FILL_FETCH_MS = 120_000
+const POSTER_FILL_MAX_ROUNDS = 120
+
+/**
+ * Walks the server's missing-poster queue in small batches so each HTTP call stays bounded.
+ */
+export const fillMissingMoviePosters = async (
+	onProgress?: (label: string) => void,
+): Promise<{ updated: number; ids: number[] }> => {
+	let totalUpdated = 0
+	const allIds: number[] = []
+	let zeroProgressFullBatches = 0
+
+	for (let round = 1; round <= POSTER_FILL_MAX_ROUNDS; round++) {
+		onProgress?.(String(round))
+		const controller = new AbortController()
+		const timeoutId = window.setTimeout(
+			() => controller.abort(),
+			POSTER_FILL_FETCH_MS,
+		)
+		try {
+			const res = await fetch(
+				`${API_URL}/api/movies/fill-missing-posters?limit=${POSTER_FILL_BATCH}`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					signal: controller.signal,
+				},
+			)
+			if (!res.ok) {
+				throw new Error(`Failed to fill missing posters: ${res.statusText}`)
+			}
+			const data = (await res.json()) as {
+				updated?: unknown
+				ids?: unknown
+				processed?: unknown
+				more_pending?: unknown
+			}
+			const updated = toNum(data.updated)
+			const processed = toNum(data.processed)
+			const morePending = Boolean(data.more_pending)
+			totalUpdated += updated
+			if (Array.isArray(data.ids)) {
+				allIds.push(...data.ids.map((id) => toNum(id)))
+			}
+			if (!morePending || processed === 0) {
+				break
+			}
+			if (processed === POSTER_FILL_BATCH && updated === 0 && morePending) {
+				zeroProgressFullBatches++
+				if (zeroProgressFullBatches >= 2) {
+					break
+				}
+			} else {
+				zeroProgressFullBatches = 0
+			}
+		} finally {
+			window.clearTimeout(timeoutId)
+		}
+	}
+
+	return { updated: totalUpdated, ids: allIds }
+}
+
 export const saveToAPI = async (
 	movies: unknown[],
 	series: unknown[],

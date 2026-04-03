@@ -1,9 +1,13 @@
 import json
+import time
 
+from django.db.models import Q
 from django.utils.text import slugify
 from ninja import Router, Schema
+from ninja.errors import HttpError
 
 from cinematheque_app.models import Movie
+from cinematheque_app.services.poster_fetch import resolve_poster_url
 
 
 class PaletteSchema(Schema):
@@ -41,6 +45,13 @@ class MovieSchema(Schema):
 
 class MoviesResponse(Schema):
     movies: list[MovieSchema]
+
+
+class FillMissingPostersResponse(Schema):
+    updated: int
+    ids: list[int]
+    processed: int
+    more_pending: bool
 
 
 router = Router()
@@ -112,3 +123,49 @@ def get_movies(request):
         )
 
     return {"movies": movies_data}
+
+
+FILL_POSTER_MAX_BATCH = 50
+
+
+@router.post(
+    "fill-missing-posters",
+    response=FillMissingPostersResponse,
+)
+def fill_missing_posters(request, limit: int = 25):
+    """
+    Resolve poster URLs for up to ``limit`` movies currently missing a poster.
+
+    Re-call while ``more_pending`` is true to walk the queue in bounded HTTP requests.
+    As rows get a poster, the next call naturally takes the next slice of the queue.
+    """
+    from django.conf import settings as django_settings
+
+    if not (django_settings.TMDB_API_KEY or "").strip():
+        raise HttpError(
+            503,
+            "Poster fill is unavailable: TMDB_API_KEY is not configured.",
+        )
+
+    batch = max(1, min(int(limit), FILL_POSTER_MAX_BATCH))
+    qs = Movie.objects.filter(Q(poster__isnull=True) | Q(poster="")).order_by("id")
+    chunk = list(qs[:batch])
+    updated_ids: list[int] = []
+
+    for movie in chunk:
+        poster_url = resolve_poster_url(movie.title, movie.year, "movie")
+        if poster_url:
+            movie.poster = poster_url
+            movie.save(update_fields=["poster"])
+            updated_ids.append(movie.id)
+        time.sleep(0.2)
+
+    processed = len(chunk)
+    # True if the queue might still have rows (caller should re-fetch; queue shrinks as posters are set).
+    more_pending = processed == batch
+    return {
+        "updated": len(updated_ids),
+        "ids": updated_ids,
+        "processed": processed,
+        "more_pending": more_pending,
+    }

@@ -1,6 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react"
-import { loadFromAPI, saveToAPI } from "@/api/api"
-import { fetchPoster } from "@/api/tmdb"
+import { fillMissingMoviePosters, loadFromAPI, saveToAPI } from "@/api/api"
 import ItemCard from "@/components/items/ItemCard"
 import ItemListRow from "@/components/items/ItemListRow"
 import Header from "@/components/layout/Header"
@@ -61,33 +60,6 @@ const App = () => {
 
 	const [posterProgress, setPosterProgress] = useState("")
 
-	// Fetch missing posters after loading
-	const fetchMissingPosters = useCallback(async (moviesList: Item[]) => {
-		const needPoster = moviesList.filter((f) => !f.poster)
-		if (needPoster.length === 0) return moviesList
-
-		setPosterProgress(`0/${needPoster.length}`)
-		const updated = [...moviesList]
-		let count = 0
-
-		for (const film of needPoster) {
-			count++
-			setPosterProgress(`${count}/${needPoster.length}`)
-
-			const poster = await fetchPoster(film.title, film.year, "movie")
-			if (poster) {
-				const idx = updated.findIndex((f) => f.id === film.id)
-				if (idx !== -1) {
-					updated[idx] = { ...updated[idx], poster }
-				}
-			}
-			await new Promise((r) => setTimeout(r, 200))
-		}
-
-		setPosterProgress("")
-		return updated
-	}, [])
-
 	const loadFromBackend = useCallback(async () => {
 		setSyncing(true)
 		try {
@@ -108,35 +80,30 @@ const App = () => {
 			setSyncing(false)
 			setLastSync(new Date())
 
-			let nextMovies = loadedMovies
-			let nextDocumentaries = loadedDocumentaries
-			let needPosterSave = false
-
-			if (loadedMovies.some((f: Item) => !f.poster)) {
-				nextMovies = await fetchMissingPosters(loadedMovies)
-				setMovies(nextMovies)
-				needPosterSave = true
-			}
-			if (loadedDocumentaries.some((f: Item) => !f.poster)) {
-				nextDocumentaries = await fetchMissingPosters(loadedDocumentaries)
-				setDocumentaries(nextDocumentaries)
-				needPosterSave = true
-			}
-			if (needPosterSave) {
-				await saveToAPI(
-					nextMovies,
-					loadedSeries,
-					loadedBooks,
-					loadedComics,
-					nextDocumentaries,
-				)
+			if (
+				loadedMovies.some((f: Item) => !f.poster) ||
+				loadedDocumentaries.some((f: Item) => !f.poster)
+			) {
+				setPosterProgress("…")
+				setSyncing(true)
+				try {
+					await fillMissingMoviePosters((round) => setPosterProgress(round))
+					const refreshed = await loadFromAPI()
+					setMovies(refreshed.loadedMovies)
+					setDocumentaries(refreshed.loadedDocumentaries)
+				} catch (e) {
+					console.error("Poster fill failed", e)
+				} finally {
+					setPosterProgress("")
+					setSyncing(false)
+				}
 			}
 		} catch (e) {
 			console.error("Erreur chargement:", e)
 			setSyncing(false)
 			setLoading(false)
 		}
-	}, [fetchMissingPosters])
+	}, [])
 
 	// Load from API on mount (no localStorage seed — server is source of truth)
 	useEffect(() => {

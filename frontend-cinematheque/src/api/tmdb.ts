@@ -1,5 +1,3 @@
-import { getPosterUrl } from "@/utils/poster"
-
 // API Base URLs
 export const TMDB_BASE_URL = "https://api.themoviedb.org/3"
 export const TMDB_IMG_SM = "https://image.tmdb.org/t/p/w154"
@@ -42,7 +40,6 @@ interface SearchOptions {
 
 // Private helpers
 const getApiKey = (): string => import.meta.env.VITE_TMDB_KEY || ""
-const getOmdbKey = (): string => import.meta.env.VITE_OMDB_KEY || ""
 
 const buildUrl = (
 	endpoint: string,
@@ -146,37 +143,4 @@ export const getDetailsWithCredits = async (
 		getCredits(id, type),
 	])
 	return { details, credits }
-}
-
-// Fetch poster from TMDB then fallback to OMDb
-export const fetchPoster = async (
-	title: string,
-	year: number,
-	type: MediaType = "movie",
-): Promise<string | null> => {
-	try {
-		const results = await searchTMDB(title, type, { year })
-		if (results[0]?.poster_path) {
-			return getPosterUrl(results[0].poster_path)
-		}
-	} catch {
-		// Continue to fallback
-	}
-
-	if (type === "movie") {
-		const OMDB_KEY = getOmdbKey()
-		try {
-			const res = await fetch(
-				`${OMDB_BASE_URL}/?apikey=${OMDB_KEY}&t=${encodeURIComponent(title)}&y=${year}&type=movie`,
-			)
-			const data = await res.json()
-			if (data.Poster && data.Poster !== "N/A") {
-				return data.Poster
-			}
-		} catch {
-			// No fallback available
-		}
-	}
-
-	return null
 }
