@@ -1,0 +1,26 @@
+# Version control
+.git
+.gitignore
+
+# Dependencies
+node_modules
+.npm
+
+# Build output
+build
+.svelte-kit
+
+# Environment files
+.env*
+
+# Development files
+*.log
+.vscode
+.idea
+
+# SQLite database (will be mounted as volume)
+static/*.db
+
+# System files
+.DS_Store
+Thumbs.db

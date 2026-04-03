@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+	--font-sans: Work Sans, system-ui, sans-serif;
+
+	--text-4xl: 2.5rem;
+	--text-4xl--line-height: 1.1;
+	--text-4xl--letter-spacing: -0.03em;
+	--text-4xl--font-weight: 600;
+	--text-2xl: 1.5rem;
+	--text-2xl--line-height: 1.2;
+	--text-2xl--letter-spacing: -0.02em;
+	--text-2xl--font-weight: 500;
+
+	--animate-fade-in: fade-in 0.8s ease-out;
+	--animate-slide-down: slide-down 0.8s ease-out;
+
+	--color-theme-bg-light: #f3f4f6;
+	--color-theme-bg-dark: #09090b;
+
+	--color-theme-text-light: #1f2937;
+	--color-theme-text-dark: #d4d4d8;
+
+	@keyframes fade-in {
+		0% {
+			opacity: 0;
+		}
+		100% {
+			opacity: 1;
+		}
+	}
+	@keyframes slide-down {
+		0% {
+			transform: translateY(-10px);
+			opacity: 0;
+		}
+		100% {
+			transform: translateY(0);
+			opacity: 1;
+		}
+	}
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+	*,
+	::after,
+	::before,
+	::backdrop,
+	::file-selector-button {
+		border-color: var(--color-gray-200, currentColor);
+	}
+}
+
+@layer utilities {
+	@font-face {
+		font-family: "Windsor";
+		src:
+			url("/fonts/windsor-light.woff") format("woff"),
+			/* Fallback for older browsers */ url("/fonts/windsor-light.otf")
+			format("opentype");
+		/* Final fallback */
+		font-weight: 300;
+		font-style: normal;
+		font-display: swap;
+	}
+}
+
+@layer base {
+	html {
+		font-family: "Work Sans", sans-serif;
+		scroll-behavior: smooth;
+	}
+
+	.font-windsor {
+		font-family: "Windsor", serif;
+	}
+}

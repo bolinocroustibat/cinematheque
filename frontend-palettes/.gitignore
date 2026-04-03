@@ -1,0 +1,3 @@
+# SvelteKit output in this app only (see repo root .gitignore for Node/Vite/env)
+/.svelte-kit
+/package

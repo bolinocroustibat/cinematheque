@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Movies Color Palettes</title>
+		<meta name="description" content="Explore color palettes extracted from my movies collection. Like watching movies, but without all the pesky plot and characters." />
+		<link rel="icon" type="image/png" href="%sveltekit.assets%/favicon-96x96.png" sizes="96x96" />
+		<link rel="icon" type="image/svg+xml" href="%sveltekit.assets%/favicon.svg" />
+		<link rel="apple-touch-icon" sizes="180x180" href="%sveltekit.assets%/apple-touch-icon.png" />
+		<meta name="apple-mobile-web-app-title" content="Movies Color Palettes" />
+		<link rel="manifest" href="%sveltekit.assets%/site.webmanifest" />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="author" content="Adrien Carpentier">
+
+		<!-- Open Graph / Facebook -->
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content="https://movies-palettes.adriencarpentier.com/" />
+		<meta property="og:title" content="Movies Color Palettes" />
+		<meta property="og:description" content="Explore color palettes extracted from my movies collection. Like watching movies, but without all the pesky plot and characters." />
+		<meta property="og:image" content="https://movies-palettes.adriencarpentier.com/opengraph.jpg" />
+
+		<!-- Twitter -->
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:url" content="https://movies-palettes.adriencarpentier.com" />
+		<meta name="twitter:title" content="Movies Color Palettes" />
+		<meta name="twitter:description" content="Explore color palettes extracted from my movies collection. Like watching movies, but without all the pesky plot and characters." />
+		<meta name="twitter:image" content="https://movies-palettes.adriencarpentier.com/opengraph.jpg" />
+
+		<!-- WhatsApp -->
+		<meta property="og:site_name" content="Movies Color Palettes">
+		<meta property="og:locale" content="en_US">
+
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover" class="dark">
+		<div style="display: contents">%sveltekit.body%</div>
+		<script>
+			// Initialize theme from localStorage
+			const theme = localStorage.getItem('theme') || 'dark';
+			document.body.className = theme;
+		</script>
+	</body>
+</html>
