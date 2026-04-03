@@ -1,5 +1,5 @@
 // API client for backend (separate endpoints per resource)
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000"
+const API_URL = import.meta.env.API_URL || "http://localhost:8000"
 
 const toNum = (v: unknown): number =>
 	typeof v === "number" && !Number.isNaN(v) ? v : parseInt(String(v), 10) || 0

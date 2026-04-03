@@ -12,10 +12,10 @@ App: movies, series, books, comics. Backend API + two frontends.
 
 - **Stack**: React 18, TypeScript, Vite 6. Bun. Biome.
 - **Paths**: `frontend-cinematheque/src/` — `App.tsx`, `api/`, `components/`, `types.ts`, `utils/`. Use `@/` alias.
-- **Conventions**: Data from backend (`VITE_API_URL`) or Sheets. Keep `types.ts` in sync with API. After creating or editing frontend code, lint and format: `bunx biome check --write .` (from `frontend-cinematheque/`).
+- **Conventions**: Data from backend (`API_URL` in root `.env`, injected as `import.meta.env.API_URL`). Stack-wide `ENVIRONMENT` (same as Django) is available as `import.meta.env.ENVIRONMENT`. Keep `types.ts` in sync with API. After creating or editing frontend code, lint and format: `bunx biome check --write .` (from `frontend-cinematheque/`).
 
 ## Frontend Palettes
 
 - **Stack**: SvelteKit 2, Svelte 5, TypeScript, Vite 6, Tailwind 4. Bun. Biome.
 - **Paths**: `frontend-palettes/src/` — `routes/`, `lib/types.ts`, `lib/utils.ts`.
-- **Conventions**: Data from backend (`API_URL` env var, fetched server-side in `+page.server.ts`). After creating or editing frontend code, lint and format: `bunx biome check --write src/` (from `frontend-palettes/`).
+- **Conventions**: Same `API_URL` and `ENVIRONMENT` as the rest of the stack (repo-root `.env`, `envDir`); server-side in `+page.server.ts` via `$env/dynamic/private`. After creating or editing frontend code, lint and format: `bunx biome check --write src/` (from `frontend-palettes/`).

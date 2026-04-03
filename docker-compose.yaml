@@ -43,12 +43,19 @@ services:
 
       # CORS settings
       - CORS_ORIGIN_ALLOW_ALL=${CORS_ORIGIN_ALLOW_ALL:-True}
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:${FRONTEND_PORT:-4173}}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:${APP_PORT:-3000}}
 
       # Movie recommendations LLM (Gemini today; same env if you swap provider)
       - LLM_API_KEY=${LLM_API_KEY}
     healthcheck:
-      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/api/\")'"]
+      # TCP check: avoids false failures when ALLOWED_HOSTS excludes localhost (HTTP would return 400).
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import socket; s=socket.socket(); s.settimeout(2); s.connect(('127.0.0.1',8000)); s.close()",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -66,12 +73,13 @@ services:
       args:
         - VITE_TMDB_KEY=${VITE_TMDB_KEY}
         - VITE_OMDB_KEY=${VITE_OMDB_KEY}
-        - VITE_SHEETS_API=${VITE_SHEETS_API}
+        - API_URL=${API_URL:-http://localhost:${API_PORT:-8000}}
+        - ENVIRONMENT=${ENVIRONMENT:-unknown}
     restart: unless-stopped
     ports:
       - "${APP_PORT:-3000}:3000"
     environment:
-      - VITE_ENV=${VITE_ENV:-local}
+      - ENVIRONMENT=${ENVIRONMENT:-unknown}
     depends_on:
       backend:
         condition: service_healthy
@@ -86,7 +94,9 @@ services:
     ports:
       - "${MOVIES_PALETTES_PORT:-3001}:3000"
     environment:
+      # Server-side fetches use the Docker network; container listens on 8000 (host uses API_PORT)
       - API_URL=http://backend:8000
+      - ENVIRONMENT=${ENVIRONMENT:-unknown}
     depends_on:
       backend:
         condition: service_healthy
