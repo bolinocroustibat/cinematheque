@@ -75,15 +75,15 @@ const ItemModal = ({
 					)}
 					{"seasons" in item && item.seasons && (
 						<div className="modal-section">
-							<h4>Saisons</h4>
+							<h4>Seasons</h4>
 							<p>
-								{item.seasons} saison{item.seasons > 1 ? "s" : ""}
+								{item.seasons} season{item.seasons > 1 ? "s" : ""}
 							</p>
 						</div>
 					)}
 					{item.recommendation_source && (
 						<div className="modal-section">
-							<h4>Recommandation</h4>
+							<h4>Recommendation</h4>
 							<p>{item.recommendation_source}</p>
 						</div>
 					)}
@@ -95,27 +95,27 @@ const ItemModal = ({
 						>
 							{isConsumed(item)
 								? tab === "books" || tab === "comics"
-									? "✓ Lu"
-									: "✓ Vu"
+									? "✓ Read"
+									: "✓ Watched"
 								: tab === "books" || tab === "comics"
-									? "Marquer lu"
-									: "Marquer vu"}
+									? "Mark as read"
+									: "Mark as watched"}
 						</button>
 						<button
 							type="button"
 							className="btn btn-secondary"
 							onClick={onEdit}
 						>
-							Modifier
+							Edit
 						</button>
 						<button type="button" className="btn btn-secondary" onClick={onFix}>
-							Affiche
+							Poster
 						</button>
 						<button
 							type="button"
 							className="btn btn-danger"
 							onClick={() => {
-								if (confirm("Supprimer ?")) onDelete(item.id)
+								if (confirm("Delete this item?")) onDelete(item.id)
 							}}
 						>
 							✕
@@ -135,11 +135,11 @@ const ItemModal = ({
 							</a>
 							<a
 								className="btn btn-primary"
-								href={`https://www.justwatch.com/fr/recherche?q=${encodeURIComponent(item.title)}`}
+								href={`https://www.justwatch.com/us/search?q=${encodeURIComponent(item.title)}`}
 								target="_blank"
 								rel="noreferrer"
 							>
-								Où regarder
+								Where to watch
 							</a>
 						</>
 					) : (
@@ -154,11 +154,11 @@ const ItemModal = ({
 							</a>
 							<a
 								className="btn btn-primary"
-								href={`https://www.babelio.com/recherche.php?Recherche=${encodeURIComponent(item.title)}`}
+								href={`https://openlibrary.org/search?q=${encodeURIComponent(item.title)}`}
 								target="_blank"
 								rel="noreferrer"
 							>
-								Babelio
+								Open Library
 							</a>
 						</>
 					)}

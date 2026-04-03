@@ -67,7 +67,7 @@ const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
 				aria-modal="true"
 			>
 				<div className="modal-head">
-					<div className="modal-title">Modifier</div>
+					<div className="modal-title">Edit</div>
 					<button type="button" className="modal-close" onClick={onClose}>
 						×
 					</button>
@@ -76,7 +76,7 @@ const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
 					<form onSubmit={handleSubmit}>
 						<div className="form-grid">
 							<label className="full">
-								<span>Titre *</span>
+								<span>Title *</span>
 								<input
 									type="text"
 									value={form.title}
@@ -86,7 +86,7 @@ const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
 							</label>
 							<label>
 								<span>
-									{isFilm ? "Réalisateur" : isSeries ? "Créateur" : "Auteur"}
+									{isFilm ? "Director" : isSeries ? "Creator" : "Author"}
 								</span>
 								<input
 									type="text"
@@ -107,7 +107,7 @@ const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
 								/>
 							</label>
 							<label>
-								<span>Année</span>
+								<span>Year</span>
 								<input
 									type="number"
 									value={form.year}
@@ -116,7 +116,7 @@ const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
 							</label>
 							{isSeries && (
 								<label>
-									<span>Saisons</span>
+									<span>Seasons</span>
 									<input
 										type="number"
 										value={form.seasons}
@@ -127,7 +127,7 @@ const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
 								</label>
 							)}
 							<label className="full">
-								<span>Pays</span>
+								<span>Country</span>
 								<input
 									type="text"
 									value={form.country}
@@ -137,14 +137,14 @@ const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
 								/>
 							</label>
 							<label className="full">
-								<span>Source / Reco</span>
+								<span>Source / recommendation</span>
 								<input
 									type="text"
 									value={form.recommendation_source}
 									onChange={(e) =>
 										setForm({ ...form, recommendation_source: e.target.value })
 									}
-									placeholder="Reco ami..."
+									placeholder="Friend tip..."
 								/>
 							</label>
 							<label className="checkbox">
@@ -155,11 +155,11 @@ const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
 										setForm({ ...form, watched: e.target.checked })
 									}
 								/>
-								<span>{isMedia ? "Vu" : "Lu"}</span>
+								<span>{isMedia ? "Watched" : "Read"}</span>
 							</label>
 							{form.watched && (
 								<div className="form-field">
-									<span>Note</span>
+									<span>Rating</span>
 									<div className="rating-input">
 										{[1, 2, 3, 4, 5].map((n) => (
 											<button
@@ -187,10 +187,10 @@ const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
 								className="btn btn-secondary"
 								onClick={onClose}
 							>
-								Annuler
+								Cancel
 							</button>
 							<button type="submit" className="btn btn-primary">
-								Enregistrer
+								Save
 							</button>
 						</div>
 					</form>

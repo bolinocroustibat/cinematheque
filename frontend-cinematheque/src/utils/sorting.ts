@@ -6,11 +6,11 @@ export const sortItems = (list: Item[], sort: SortType): Item[] => {
 	switch (sort) {
 		case "alpha-asc":
 			return sorted.sort((a, b) =>
-				(a.title || "").localeCompare(b.title || "", "fr"),
+				(a.title || "").localeCompare(b.title || "", "en"),
 			)
 		case "alpha-desc":
 			return sorted.sort((a, b) =>
-				(b.title || "").localeCompare(a.title || "", "fr"),
+				(b.title || "").localeCompare(a.title || "", "en"),
 			)
 		case "year-desc":
 			return sorted.sort((a, b) => (b.year || 0) - (a.year || 0))
@@ -28,7 +28,7 @@ export const sortItems = (list: Item[], sort: SortType): Item[] => {
 					("creator" in b ? b.creator : undefined) ||
 					("author" in b ? b.author : undefined) ||
 					""
-				return aVal.localeCompare(bVal, "fr")
+				return aVal.localeCompare(bVal, "en")
 			})
 		case "added":
 			return sorted.sort((a, b) => (b.id || 0) - (a.id || 0))
@@ -56,24 +56,24 @@ export const getGroupKey = (
 		case "year-desc":
 		case "year-asc": {
 			const decade = Math.floor((item.year || 0) / 10) * 10
-			return decade > 0 ? `${decade}s` : "Inconnu"
+			return decade > 0 ? `${decade}s` : "Unknown"
 		}
 		case "director": {
 			const val =
 				("director" in item ? item.director : undefined) ||
 				("creator" in item ? item.creator : undefined) ||
 				("author" in item ? item.author : undefined) ||
-				"Inconnu"
+				"Unknown"
 			return val[0]?.toUpperCase() || "#"
 		}
 		case "unwatched":
 			return isConsumed(item)
 				? tab === "books" || tab === "comics"
-					? "Lus"
-					: "Vus"
+					? "Read"
+					: "Watched"
 				: tab === "books" || tab === "comics"
-					? "À lire"
-					: "À voir"
+					? "To read"
+					: "To watch"
 		default:
 			return null
 	}

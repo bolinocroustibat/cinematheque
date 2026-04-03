@@ -1,4 +1,10 @@
-import type { FilterType, SortType, TabType, ViewType } from "@/types"
+import {
+	type FilterType,
+	type SortType,
+	type TabType,
+	tabLabelEn,
+	type ViewType,
+} from "@/types"
 
 interface HeaderProps {
 	// Stats
@@ -62,29 +68,23 @@ const Header = ({
 		<header className="header">
 			<div className="header-top">
 				<div className="logo">
-					ma <span>collection</span>
+					my <span>collection</span>
 				</div>
 				<div className="header-right">
 					<div className="stats">
-						<b>{stats.total}</b> {tab} · <b>{stats.watched}</b>{" "}
-						{isReadType
-							? stats.watched > 1
-								? "lus"
-								: "lu"
-							: stats.watched > 1
-								? "vus"
-								: "vu"}
+						<b>{stats.total}</b> {tabLabelEn(tab)} · <b>{stats.watched}</b>{" "}
+						{isReadType ? "read" : "watched"}
 						{syncing && <span className="sync-icon"> ⟳</span>}
 					</div>
 					<button type="button" className="add-btn" onClick={onAddClick}>
-						+ Ajouter
+						+ Add
 					</button>
 				</div>
 			</div>
 
 			{posterProgress && (
 				<div className="poster-progress">
-					Téléchargement des affiches... {posterProgress}
+					Downloading posters... {posterProgress}
 				</div>
 			)}
 
@@ -109,28 +109,28 @@ const Header = ({
 					className={`tab ${tab === "series" ? "active" : ""}`}
 					onClick={() => onTabChange("series")}
 				>
-					Séries <span className="tab-count">{counts.series}</span>
+					Series <span className="tab-count">{counts.series}</span>
 				</button>
 				<button
 					type="button"
 					className={`tab ${tab === "books" ? "active" : ""}`}
 					onClick={() => onTabChange("books")}
 				>
-					Livres <span className="tab-count">{counts.books}</span>
+					Books <span className="tab-count">{counts.books}</span>
 				</button>
 				<button
 					type="button"
 					className={`tab ${tab === "comics" ? "active" : ""}`}
 					onClick={() => onTabChange("comics")}
 				>
-					BD <span className="tab-count">{counts.comics}</span>
+					Comics <span className="tab-count">{counts.comics}</span>
 				</button>
 			</div>
 
 			<div className="controls">
 				<input
 					className="search-box"
-					placeholder="Rechercher..."
+					placeholder="Search..."
 					value={search}
 					onChange={(e) => onSearchChange(e.target.value)}
 				/>
@@ -140,21 +140,21 @@ const Header = ({
 					className={`filter-btn ${filter === "all" ? "active" : ""}`}
 					onClick={() => onFilterChange("all")}
 				>
-					Tous
+					All
 				</button>
 				<button
 					type="button"
 					className={`filter-btn ${filter === "unwatched" ? "active" : ""}`}
 					onClick={() => onFilterChange("unwatched")}
 				>
-					{isReadType ? "À lire" : "À voir"}
+					{isReadType ? "To read" : "To watch"}
 				</button>
 				<button
 					type="button"
 					className={`filter-btn ${filter === "watched" ? "active" : ""}`}
 					onClick={() => onFilterChange("watched")}
 				>
-					{isReadType ? "Lus" : "Vus"}
+					{isReadType ? "Read" : "Watched"}
 				</button>
 				<div className="filter-divider" />
 				<select
@@ -162,20 +162,20 @@ const Header = ({
 					onChange={(e) => onSortChange(e.target.value as SortType)}
 					className="sort-select"
 				>
-					<option value="year-desc">Année ↓</option>
-					<option value="year-asc">Année ↑</option>
+					<option value="year-desc">Year ↓</option>
+					<option value="year-asc">Year ↑</option>
 					<option value="alpha-asc">A → Z</option>
 					<option value="alpha-desc">Z → A</option>
 					<option value="director">
 						{tab === "films" || tab === "documentaries"
-							? "Réalisateur"
+							? "Director"
 							: tab === "series"
-								? "Créateur"
-								: "Auteur"}
+								? "Creator"
+								: "Author"}
 					</option>
-					<option value="added">Récents</option>
+					<option value="added">Recently added</option>
 					<option value="unwatched">
-						{isReadType ? "Non lus" : "Non vus"}
+						{isReadType ? "Unread" : "Unwatched"}
 					</option>
 				</select>
 				<div className="view-controls">
@@ -197,7 +197,7 @@ const Header = ({
 						type="button"
 						className={`view-btn ${showSeparators ? "active" : ""}`}
 						onClick={() => onShowSeparatorsChange(!showSeparators)}
-						title="Séparateurs"
+						title="Separators"
 					>
 						―
 					</button>

@@ -125,7 +125,7 @@ const FixPosterModal = ({
 				aria-modal="true"
 			>
 				<div className="modal-head">
-					<div className="modal-title">Corriger le film</div>
+					<div className="modal-title">Fix poster</div>
 					<button type="button" className="modal-close" onClick={onClose}>
 						×
 					</button>
@@ -138,7 +138,7 @@ const FixPosterModal = ({
 							value={query}
 							onChange={(e) => setQuery(e.target.value)}
 							onKeyDown={(e) => e.key === "Enter" && doSearch()}
-							placeholder="Titre"
+							placeholder="Title"
 							style={{ flex: 1 }}
 						/>
 						<input
@@ -146,7 +146,7 @@ const FixPosterModal = ({
 							className="search-box year-input"
 							value={year}
 							onChange={(e) => setYear(e.target.value)}
-							placeholder="Année"
+							placeholder="Year"
 						/>
 						<button
 							type="button"
@@ -174,7 +174,7 @@ const FixPosterModal = ({
 						</button>
 					</div>
 
-					{searching && <div className="searching">Recherche...</div>}
+					{searching && <div className="searching">Searching...</div>}
 
 					<div className="fix-results">
 						{results.map((r) => (
@@ -187,7 +187,7 @@ const FixPosterModal = ({
 								{r.poster ? (
 									<img src={r.poster} alt="" />
 								) : (
-									<div className="fix-no-poster">Pas d'affiche</div>
+									<div className="fix-no-poster">No poster</div>
 								)}
 								<div className="fix-result-info">
 									<div className="fix-result-title">{r.title}</div>
@@ -201,7 +201,7 @@ const FixPosterModal = ({
 
 					{results.length === 0 && !searching && (
 						<div className="empty-small">
-							Aucun résultat. Essayez le titre original.
+							No results. Try the original title.
 						</div>
 					)}
 
@@ -211,7 +211,7 @@ const FixPosterModal = ({
 							className="link-btn"
 							onClick={() => setShowManual(!showManual)}
 						>
-							{showManual ? "▼ Masquer" : "▶ Coller une URL"}
+							{showManual ? "▼ Hide" : "▶ Paste image URL"}
 						</button>
 						{showManual && (
 							<div className="manual-url">

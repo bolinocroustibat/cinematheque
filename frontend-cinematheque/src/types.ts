@@ -1,6 +1,18 @@
 // Tab identifiers (used in UI)
 export type TabType = "films" | "documentaries" | "series" | "books" | "comics"
 
+/** English plural label for counts and filters (internal tab keys stay as-is). */
+export function tabLabelEn(tab: TabType): string {
+	const labels: Record<TabType, string> = {
+		films: "movies",
+		documentaries: "documentaries",
+		series: "series",
+		books: "books",
+		comics: "comics",
+	}
+	return labels[tab]
+}
+
 // Item type identifiers (used in storage/API)
 export type ItemType = "film" | "series" | "book" | "comic"
 

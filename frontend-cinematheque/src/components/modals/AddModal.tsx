@@ -74,14 +74,14 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 						query,
 						isSeries ? "tv" : "movie",
 						{
-							language: "fr-FR",
+							language: "en-US",
 						},
 					)
 					setResults(searchResults.slice(0, 8))
 				} else {
-					// Google Books API pour livres et BD
+					// Google Books API for books and comics
 					const res = await fetch(
-						`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=8&langRestrict=fr`,
+						`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=8&langRestrict=en`,
 					)
 					const data = await res.json()
 					setResults(
@@ -122,7 +122,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 				const { details, credits } = await getDetailsWithCredits(
 					Number(item.id),
 					isSeries ? "tv" : "movie",
-					{ language: "fr-FR" },
+					{ language: "en-US" },
 				)
 
 				if (!details || !credits) {
@@ -171,7 +171,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 				})
 			}
 		} else {
-			// Livre ou BD
+			// Book or comic
 			setForm({
 				title: item.title || "",
 				director: "",
@@ -216,11 +216,11 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 	}
 
 	const getTypeLabel = () => {
-		if (isFilmTab) return "un film"
-		if (isDocumentaryTab) return "un documentaire"
-		if (isSeries) return "une série"
-		if (isBook) return "un livre"
-		return "une BD"
+		if (isFilmTab) return "a movie"
+		if (isDocumentaryTab) return "a documentary"
+		if (isSeries) return "a series"
+		if (isBook) return "a book"
+		return "a comic"
 	}
 
 	const getIcon = () => {
@@ -243,7 +243,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 				aria-modal="true"
 			>
 				<div className="modal-head">
-					<div className="modal-title">Ajouter {getTypeLabel()}</div>
+					<div className="modal-title">Add {getTypeLabel()}</div>
 					<button type="button" className="modal-close" onClick={onClose}>
 						×
 					</button>
@@ -255,7 +255,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 								<input
 									type="text"
 									className="search-box full"
-									placeholder={`Rechercher ${getTypeLabel()}...`}
+									placeholder={`Search for ${getTypeLabel()}...`}
 									value={query}
 									onChange={(e) => setQuery(e.target.value)}
 								/>
@@ -304,7 +304,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 								className="link-btn"
 								onClick={() => setMode("manual")}
 							>
-								Ou ajouter manuellement →
+								Or add manually →
 							</button>
 						</>
 					)}
@@ -321,14 +321,14 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 											setMode("search")
 										}}
 									>
-										Changer
+										Change
 									</button>
 								</div>
 							)}
 
 							<div className="form-grid">
 								<label className="full">
-									<span>Titre *</span>
+									<span>Title *</span>
 									<input
 										type="text"
 										value={form.title}
@@ -341,10 +341,10 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 								<label>
 									<span>
 										{isFilmTab || isDocumentaryTab
-											? "Réalisateur"
+											? "Director"
 											: isSeries
-												? "Créateur"
-												: "Auteur"}
+												? "Creator"
+												: "Author"}
 									</span>
 									<input
 										type="text"
@@ -368,7 +368,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 									/>
 								</label>
 								<label>
-									<span>Année</span>
+									<span>Year</span>
 									<input
 										type="number"
 										value={form.year}
@@ -377,7 +377,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 								</label>
 								{isSeries && (
 									<label>
-										<span>Saisons</span>
+										<span>Seasons</span>
 										<input
 											type="number"
 											value={form.seasons}
@@ -389,7 +389,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 								)}
 								{isMedia && (
 									<label className="full">
-										<span>Pays</span>
+										<span>Country</span>
 										<input
 											type="text"
 											value={form.country ?? ""}
@@ -401,7 +401,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 								)}
 								{(isBook || type === "comics") && (
 									<label className="full">
-										<span>Pays</span>
+										<span>Country</span>
 										<input
 											type="text"
 											value={form.country ?? ""}
@@ -412,7 +412,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 									</label>
 								)}
 								<label className="full">
-									<span>Source / Reco</span>
+									<span>Source / recommendation</span>
 									<input
 										type="text"
 										value={form.recommendation_source}
@@ -422,7 +422,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 												recommendation_source: e.target.value,
 											})
 										}
-										placeholder="Reco ami..."
+										placeholder="Friend tip..."
 									/>
 								</label>
 								<label className="checkbox">
@@ -433,7 +433,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 											setForm({ ...form, watched: e.target.checked })
 										}
 									/>
-									<span>{isMedia ? "Déjà vu" : "Déjà lu"}</span>
+									<span>{isMedia ? "Already watched" : "Already read"}</span>
 								</label>
 							</div>
 
@@ -443,10 +443,10 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 									className="btn btn-secondary"
 									onClick={onClose}
 								>
-									Annuler
+									Cancel
 								</button>
 								<button type="submit" className="btn btn-primary">
-									Ajouter
+									Add
 								</button>
 							</div>
 						</form>

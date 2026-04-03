@@ -40,7 +40,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 
 			try {
 				if (isMedia) {
-					// TMDB pour films/séries
+					// TMDB for movies and series
 					const searchResults = await searchTMDB(
 						item.title,
 						type === "series" ? "tv" : "movie",
@@ -52,7 +52,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 						const recommendations = await getRecommendations(
 							id,
 							type === "series" ? "tv" : "movie",
-							{ language: "fr-FR" },
+							{ language: "en-US" },
 						)
 
 						const filtered = recommendations
@@ -74,14 +74,14 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 						setSuggestions(filtered)
 					}
 				} else {
-					// Google Books pour livres/BD
+					// Google Books for books and comics
 					const searchRes = await fetch(
 						`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(`${item.title} ${itemAuthor || ""}`)}&maxResults=1`,
 					)
 					const searchData = await searchRes.json()
 
 					if (searchData.items?.[0]) {
-						// Chercher des livres similaires par auteur ou catégorie
+						// Similar books by author or category
 						const author =
 							itemAuthor || searchData.items[0].volumeInfo?.authors?.[0] || ""
 						const category =
@@ -90,10 +90,10 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 						let query = ""
 						if (author) query = `inauthor:${author}`
 						else if (category) query = `subject:${category}`
-						else query = item.title.split(" ")[0] // Premier mot du titre
+						else query = item.title.split(" ")[0] // First word of title
 
 						const recRes = await fetch(
-							`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=12&langRestrict=fr`,
+							`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=12&langRestrict=en`,
 						)
 						const recData = await recRes.json()
 
@@ -133,7 +133,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 					}
 				}
 			} catch (e) {
-				console.error("Erreur suggestions:", e)
+				console.error("Suggestions error:", e)
 			}
 			setLoading(false)
 		}
@@ -146,11 +146,11 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 	const addSuggestion = async (sug: Suggestion) => {
 		try {
 			if (sug.source === "tmdb") {
-				// Ajout film/série depuis TMDB
+				// Add movie/series from TMDB
 				const { details, credits } = await getDetailsWithCredits(
 					Number(sug.id),
 					type === "series" ? "tv" : "movie",
-					{ language: "fr-FR" },
+					{ language: "en-US" },
 				)
 
 				if (!details || !credits) return
@@ -176,7 +176,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 
 				onAdd(newItem as unknown as Item)
 			} else {
-				// Ajout livre/BD depuis Google Books
+				// Add book/comic from Google Books
 				const res = await fetch(
 					`https://www.googleapis.com/books/v1/volumes/${sug.id}`,
 				)
@@ -200,7 +200,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 
 			setSuggestions(suggestions.filter((s) => s.id !== sug.id))
 		} catch (e) {
-			console.error("Erreur ajout suggestion:", e)
+			console.error("Add suggestion error:", e)
 		}
 	}
 
@@ -208,7 +208,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 		return (
 			<div className="suggestions">
 				<div className="suggestions-title">Suggestions</div>
-				<div className="suggestions-loading">Chargement...</div>
+				<div className="suggestions-loading">Loading...</div>
 			</div>
 		)
 	}
@@ -219,8 +219,8 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 		<div className="suggestions">
 			<div className="suggestions-title">
 				{isMedia
-					? "Si vous avez aimé, vous aimerez peut-être..."
-					: "Du même auteur ou thème..."}
+					? "Because you liked this..."
+					: "More from the same author or theme..."}
 			</div>
 			<div className="suggestions-grid">
 				{suggestions.map((sug) => (

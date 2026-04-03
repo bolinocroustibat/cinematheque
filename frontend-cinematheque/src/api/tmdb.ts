@@ -70,7 +70,7 @@ export const searchTMDB = async (
 		const url = buildUrl(endpoint, {
 			query,
 			year: options.year,
-			language: options.language || "fr-FR",
+			language: options.language || "en-US",
 		})
 		const res = await fetch(url)
 		const data = await res.json()
@@ -89,7 +89,7 @@ export const getDetails = async (
 	const endpoint = type === "movie" ? `movie/${id}` : `tv/${id}`
 	try {
 		const url = buildUrl(endpoint, {
-			language: options.language || "fr-FR",
+			language: options.language || "en-US",
 		})
 		const res = await fetch(url)
 		return await res.json()
@@ -125,7 +125,7 @@ export const getRecommendations = async (
 			: `tv/${id}/recommendations`
 	try {
 		const url = buildUrl(endpoint, {
-			language: options.language || "fr-FR",
+			language: options.language || "en-US",
 		})
 		const res = await fetch(url)
 		const data = await res.json()

@@ -16,7 +16,7 @@ import type {
 	TabType,
 	ViewType,
 } from "@/types"
-import { isConsumed } from "@/types"
+import { isConsumed, tabLabelEn } from "@/types"
 import { getGroupKey, sortItems } from "@/utils/sorting"
 
 const App = () => {
@@ -323,7 +323,7 @@ const App = () => {
 		id: number,
 		updates: { poster?: string; title?: string; year?: number },
 	) => {
-		// updates peut être {poster, title, year} ou juste {poster}
+		// updates may be {poster, title, year} or just {poster}
 		const newItems = items.map((f) => {
 			if (f.id === id) {
 				return {
@@ -372,7 +372,7 @@ const App = () => {
 		return (
 			<div className="loading-screen">
 				<div className="loading-spinner" />
-				<div>Chargement de ta cinémathèque...</div>
+				<div>Loading your collection...</div>
 			</div>
 		)
 	}
@@ -409,7 +409,7 @@ const App = () => {
 
 			<main className="main">
 				<div className="count">
-					{filtered.length} {tab}
+					{filtered.length} {tabLabelEn(tab)}
 				</div>
 				{filtered.length > 0 ? (
 					view === "grid" ? (
@@ -494,8 +494,8 @@ const App = () => {
 				) : (
 					<div className="empty">
 						{items.length === 0
-							? `Aucun ${tab === "films" ? "film" : tab === "documentaries" ? "documentaire" : tab === "series" ? "série" : tab === "books" ? "livre" : "BD"} ajouté. Clique sur "+ Ajouter" !`
-							: "Aucun résultat"}
+							? `No ${tabLabelEn(tab)} yet. Click "+ Add" to get started.`
+							: "No results"}
 					</div>
 				)}
 			</main>
