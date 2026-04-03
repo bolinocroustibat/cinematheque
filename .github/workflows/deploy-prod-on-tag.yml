@@ -1,0 +1,156 @@
+name: Deploy to prod when tag
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  bump-version:
+    name: Bump version to ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.VERSION_BUMP_TOKEN != '' && secrets.VERSION_BUMP_TOKEN || github.token }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Bump version in pyproject.toml and uv.lock to ${{ github.ref_name }}
+        run: |
+          cd backend
+          sed -i 's/^ *version.*=.*"\([^"]*\)".*/version = "${{ github.ref_name }}"/' ./pyproject.toml
+          uv lock
+
+      - name: Bump version in package.json to ${{ github.ref_name }}
+        run: |
+          for dir in frontend-cinematheque frontend-palettes; do
+            sed -E -i 's/"version":[[:space:]]*"[^"]*"/"version": "${{ github.ref_name }}"/g' "${dir}/package.json"
+          done
+
+      - name: Commit and push updated pyproject.toml and package.json
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          branch: main
+          commit_message: "chore: bump version to ${{ github.ref_name }}"
+          commit_user_name: github-actions[bot]
+          commit_user_email: github-actions[bot]@users.noreply.github.com
+          commit_author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+
+  build-and-push:
+    name: Build and push Docker images ${{ github.ref_name }}
+    needs: bump-version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend Docker images to ghcr.io/${{ github.repository }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ghcr.io/bolinocroustibat/cinematheque-backend:latest
+            ghcr.io/bolinocroustibat/cinematheque-backend:${{ github.ref_name }}
+
+      - name: Build and push frontend-cinematheque Docker images to ghcr.io/${{ github.repository }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend-cinematheque
+          push: true
+          build-args: |
+            VITE_TMDB_KEY=${{ secrets.VITE_TMDB_KEY }}
+            VITE_OMDB_KEY=${{ secrets.VITE_OMDB_KEY }}
+            API_URL=${{ vars.PRODUCTION_API_URL }}
+            ENVIRONMENT=${{ vars.PRODUCTION_ENVIRONMENT || 'production' }}
+          tags: |
+            ghcr.io/bolinocroustibat/cinematheque-frontend:latest
+            ghcr.io/bolinocroustibat/cinematheque-frontend:${{ github.ref_name }}
+
+      - name: Build and push frontend-palettes Docker images to ghcr.io/${{ github.repository }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend-palettes
+          push: true
+          tags: |
+            ghcr.io/bolinocroustibat/cinematheque-frontend-palettes:latest
+            ghcr.io/bolinocroustibat/cinematheque-frontend-palettes:${{ github.ref_name }}
+
+  deploy:
+    name: Deploy ${{ github.ref_name }} on prod
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute server commands for deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            mkdir -p /home/www/cinematheque
+            cd /home/www/cinematheque
+
+            if [ -d .git ]; then
+              git fetch
+              git reset --hard origin/main
+            else
+              git clone https://github.com/bolinocroustibat/cinematheque.git .
+            fi
+
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+            export TAG="${{ github.ref_name }}"
+            docker compose pull
+            docker compose down --remove-orphans
+            docker compose up -d
+
+            sleep 3
+            if ! docker compose ps --format json | grep -q "running"; then
+              echo "Service failed to start properly"
+              docker compose logs
+              exit 1
+            fi
+
+  create-sentry-release:
+    name: Create Sentry release
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create Sentry release
+        uses: getsentry/action-release@v3
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        with:
+          environment: production
+          release: ${{ github.ref_name }}
