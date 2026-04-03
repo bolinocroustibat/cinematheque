@@ -38,7 +38,6 @@ interface SearchOptions {
 	language?: string
 }
 
-// Private helpers
 const getApiKey = (): string => import.meta.env.VITE_TMDB_KEY || ""
 
 const buildUrl = (

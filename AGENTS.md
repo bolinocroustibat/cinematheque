@@ -10,9 +10,9 @@ App: movies, series, books, comics. Backend API + two frontends.
 
 ## Frontend Cinematheque
 
-- **Stack**: React 18, TypeScript, Vite 6. Bun. Biome.
-- **Paths**: `frontend-cinematheque/src/` — `App.tsx`, `api/`, `components/`, `types.ts`, `utils/`. Use `@/` alias.
-- **Conventions**: Data from backend (`API_URL` in root `.env`, injected as `import.meta.env.API_URL`). Stack-wide `ENVIRONMENT` (same as Django) is available as `import.meta.env.ENVIRONMENT`. Keep `types.ts` in sync with API. After creating or editing frontend code, lint and format: `bunx biome check --write .` (from `frontend-cinematheque/`).
+- **Stack**: SvelteKit 2, Svelte 5, TypeScript, Vite 6, `svelte-adapter-bun`. Bun. Biome.
+- **Paths**: `frontend-cinematheque/src/` — `routes/` (`+page.svelte`, `+page.server.ts`, `api/[...path]/+server.ts` proxy), `lib/` (`types.ts`, `api/`, `components/`, `tmdb.ts`, etc.). Static assets in `static/`.
+- **Conventions**: Browser calls same-origin `/api/...`, proxied to Django using `API_URL` / `API_PORT` at runtime (`$env/dynamic/private`, same idea as palettes). Initial collection load in `+page.server.ts`. TMDB/OMDB keys: `VITE_TMDB_KEY`, `VITE_OMDB_KEY` at build (`vite` `define` from repo-root `.env`). `ENVIRONMENT` in `import.meta.env.ENVIRONMENT`. Keep `lib/types.ts` in sync with API. After creating or editing frontend code: `bunx biome check --write .` and `bunx svelte-check --tsconfig ./tsconfig.json` (from `frontend-cinematheque/`).
 
 ## Frontend Palettes
 

@@ -78,13 +78,13 @@ services:
       args:
         - VITE_TMDB_KEY=${VITE_TMDB_KEY}
         - VITE_OMDB_KEY=${VITE_OMDB_KEY}
-        - API_URL=${API_URL:-http://localhost:${API_PORT:-8000}}
         - ENVIRONMENT=${ENVIRONMENT:-unknown}
     restart: unless-stopped
     ports:
       - "${APP_PORT:-3000}:3000"
     environment:
       - ENVIRONMENT=${ENVIRONMENT:-unknown}
+      - API_URL=http://backend:8000
     depends_on:
       backend:
         condition: service_healthy

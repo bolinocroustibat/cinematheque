@@ -1,5 +1,5 @@
-import type { Item, SortType, TabType } from "@/types"
-import { isConsumed } from "@/types"
+import type { Item, SortType, TabType } from "$lib/types"
+import { isConsumed } from "$lib/types"
 
 export const sortItems = (list: Item[], sort: SortType): Item[] => {
 	const sorted = [...list]
