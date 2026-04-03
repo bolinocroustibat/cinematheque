@@ -14,6 +14,7 @@ class SeriesSchema(Schema):
     poster: str | None = None
     rating: int | None = None
     recommendation_source: str | None = None
+    acquired_at: str | None = None
     consumed_at: str | None = None
     country: str | None = None
 
@@ -42,6 +43,7 @@ def get_series(request):
             "poster": s.poster,
             "rating": s.rating,
             "recommendation_source": s.recommendation_source,
+            "acquired_at": s.acquired_at.isoformat() if s.acquired_at else None,
             "consumed_at": s.consumed_at.isoformat() if s.consumed_at else None,
             "country": s.country,
         }

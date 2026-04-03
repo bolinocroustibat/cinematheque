@@ -178,6 +178,7 @@ async function addSuggestion(sug: Suggestion) {
 				title: sug.title,
 				year: parseInt(sug.year, 10) || 0,
 				poster: sug.poster,
+				acquired_at: null,
 				consumed_at: null,
 			}
 
@@ -208,6 +209,7 @@ async function addSuggestion(sug: Suggestion) {
 				type: type === "comics" ? ("comic" as const) : ("book" as const),
 				poster:
 					info.imageLinks?.thumbnail?.replace("http:", "https:") || sug.poster,
+				acquired_at: null,
 				consumed_at: null,
 			}
 

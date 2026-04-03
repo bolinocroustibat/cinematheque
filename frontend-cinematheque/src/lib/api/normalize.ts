@@ -3,6 +3,14 @@ import type { Book, Item } from "$lib/types"
 const toNum = (v: unknown): number =>
 	typeof v === "number" && !Number.isNaN(v) ? v : parseInt(String(v), 10) || 0
 
+const mapAcquiredAt = (item: {
+	acquired_at?: string | null
+}): string | null => {
+	if (item.acquired_at != null && item.acquired_at !== "")
+		return String(item.acquired_at)
+	return null
+}
+
 const mapConsumedAt = (item: {
 	consumed_at?: string | null
 	watched?: unknown
@@ -37,6 +45,7 @@ export function normalizeApiPayload(
 		director: m.director != null ? String(m.director) : undefined,
 		year: toNum(m.year),
 		type: mapFilmKind(m),
+		acquired_at: mapAcquiredAt(m as { acquired_at?: string | null }),
 		consumed_at: mapConsumedAt(
 			m as { consumed_at?: string | null; watched?: unknown },
 		),
@@ -62,6 +71,7 @@ export function normalizeApiPayload(
 		title: String(s.title ?? ""),
 		creator: s.creator != null ? String(s.creator) : undefined,
 		year: toNum(s.year),
+		acquired_at: mapAcquiredAt(s as { acquired_at?: string | null }),
 		consumed_at: mapConsumedAt(
 			s as { consumed_at?: string | null; watched?: unknown },
 		),
@@ -85,6 +95,7 @@ export function normalizeApiPayload(
 		author: b.author != null ? String(b.author) : undefined,
 		year: toNum(b.year),
 		type: mapBookKind(b),
+		acquired_at: mapAcquiredAt(b as { acquired_at?: string | null }),
 		consumed_at: mapConsumedAt(
 			b as { consumed_at?: string | null; watched?: unknown },
 		),

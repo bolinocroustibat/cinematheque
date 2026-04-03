@@ -39,6 +39,7 @@ class MovieSchema(Schema):
     poster: str | None = None
     rating: int | None = None
     recommendation_source: str | None = None
+    acquired_at: str | None = None
     consumed_at: str | None = None
     country: str | None = None
 
@@ -115,6 +116,9 @@ def get_movies(request):
                 "poster": movie.poster,
                 "rating": movie.rating,
                 "recommendation_source": movie.recommendation_source,
+                "acquired_at": movie.acquired_at.isoformat()
+                if movie.acquired_at
+                else None,
                 "consumed_at": movie.consumed_at.isoformat()
                 if movie.consumed_at
                 else None,

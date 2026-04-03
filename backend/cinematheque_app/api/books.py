@@ -14,6 +14,7 @@ class BookSchema(Schema):
     poster: str | None = None
     rating: int | None = None
     recommendation_source: str | None = None
+    acquired_at: str | None = None
     consumed_at: str | None = None
     country: str | None = None
 
@@ -46,6 +47,7 @@ def get_books(request):
             "poster": b.poster,
             "rating": b.rating,
             "recommendation_source": b.recommendation_source,
+            "acquired_at": b.acquired_at.isoformat() if b.acquired_at else None,
             "consumed_at": b.consumed_at.isoformat() if b.consumed_at else None,
             "country": b.country,
         }

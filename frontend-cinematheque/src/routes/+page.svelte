@@ -7,7 +7,6 @@ import {
 } from "$lib/api/client"
 import AddModal from "$lib/components/AddModal.svelte"
 import EditModal from "$lib/components/EditModal.svelte"
-import FixPosterModal from "$lib/components/FixPosterModal.svelte"
 import Header from "$lib/components/Header.svelte"
 import ItemCard from "$lib/components/ItemCard.svelte"
 import ItemListRow from "$lib/components/ItemListRow.svelte"
@@ -21,7 +20,7 @@ import type {
 	TabType,
 	ViewType,
 } from "$lib/types"
-import { isConsumed, tabLabelEn } from "$lib/types"
+import { isAcquired, isConsumed, tabLabelEn } from "$lib/types"
 
 let { data } = $props()
 
@@ -37,7 +36,6 @@ let selected = $state<Item | null>(null)
 let view = $state<ViewType>("grid")
 let cardSize = $state(120)
 let showAdd = $state(false)
-let showFix = $state(false)
 let syncing = $state(false)
 let posterProgress = $state("")
 let sort = $state<SortType>("year-desc")
@@ -256,6 +254,30 @@ function saveAll(
 	)
 }
 
+function toggleAcquired(id: number) {
+	const newItems = items.map((f) =>
+		f.id === id
+			? {
+					...f,
+					acquired_at: isAcquired(f) ? null : new Date().toISOString(),
+				}
+			: f,
+	)
+	setItemsForTab(newItems)
+	if (selected?.id === id)
+		selected = {
+			...selected,
+			acquired_at: isAcquired(selected) ? null : new Date().toISOString(),
+		} as Item
+
+	if (tab === "films") saveAll(newItems)
+	else if (tab === "documentaries")
+		saveAll(undefined, undefined, undefined, undefined, newItems)
+	else if (tab === "series") saveAll(undefined, newItems)
+	else if (tab === "books") saveAll(undefined, undefined, newItems)
+	else saveAll(undefined, undefined, undefined, newItems)
+}
+
 function toggleWatch(id: number, e?: MouseEvent) {
 	if (e) e.stopPropagation()
 	const newItems = items.map((f) =>
@@ -297,40 +319,6 @@ function deleteItem(id: number) {
 	const newItems = items.filter((f) => f.id !== id)
 	setItemsForTab(newItems)
 	selected = null
-
-	if (tab === "films") saveAll(newItems)
-	else if (tab === "documentaries")
-		saveAll(undefined, undefined, undefined, undefined, newItems)
-	else if (tab === "series") saveAll(undefined, newItems)
-	else if (tab === "books") saveAll(undefined, undefined, newItems)
-	else saveAll(undefined, undefined, undefined, newItems)
-}
-
-function updatePoster(
-	id: number,
-	updates: { poster?: string; title?: string; year?: number },
-) {
-	const newItems = items.map((f) => {
-		if (f.id === id) {
-			return {
-				...f,
-				poster: updates.poster || f.poster,
-				title: updates.title || f.title,
-				year: updates.year || f.year,
-			}
-		}
-		return f
-	})
-	setItemsForTab(newItems)
-	if (selected?.id === id) {
-		selected = {
-			...selected,
-			poster: updates.poster || selected.poster,
-			title: updates.title || selected.title,
-			year: updates.year || selected.year,
-		} as Item
-	}
-	showFix = false
 
 	if (tab === "films") saveAll(newItems)
 	else if (tab === "documentaries")
@@ -473,8 +461,8 @@ function updateItem(id: number, updates: Partial<Item>) {
 				tab={tab}
 				onClose={() => (selected = null)}
 				onToggleWatch={(id) => toggleWatch(id)}
+				onToggleAcquired={(id) => toggleAcquired(id)}
 				onEdit={() => (showEdit = true)}
-				onFix={() => (showFix = true)}
 				onDelete={deleteItem}
 				items={items}
 				onAdd={addItem}
@@ -483,16 +471,6 @@ function updateItem(id: number, updates: Partial<Item>) {
 
 		{#if showAdd}
 			<AddModal type={tab} onClose={() => (showAdd = false)} onAdd={addItem} />
-		{/if}
-		{#if showFix && selected}
-			{#key selected.id}
-				<FixPosterModal
-					item={selected}
-					type={tab}
-					onClose={() => (showFix = false)}
-					onSelect={updatePoster}
-				/>
-			{/key}
 		{/if}
 		{#if showEdit && selected}
 			{#key selected.id}

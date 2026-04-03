@@ -20,6 +20,7 @@ interface FormState {
 	author: string
 	year: string
 	recommendation_source: string
+	owned: boolean
 	watched: boolean
 	poster: string
 	seasons: string
@@ -48,6 +49,7 @@ let form = $state<FormState>({
 	author: "",
 	year: "",
 	recommendation_source: "",
+	owned: false,
 	watched: false,
 	poster: "",
 	seasons: "",
@@ -146,6 +148,7 @@ async function selectItem(item: SearchResult) {
 					year: item.release_date?.split("-")[0] || "",
 					country: details.production_countries?.[0]?.name || "",
 					recommendation_source: "",
+					owned: false,
 					watched: false,
 					poster: getPosterUrl(item.poster_path) || "",
 					seasons: "",
@@ -160,6 +163,7 @@ async function selectItem(item: SearchResult) {
 					country: details.origin_country?.[0] || "",
 					seasons: String(details.number_of_seasons || ""),
 					recommendation_source: "",
+					owned: false,
 					watched: false,
 					poster: getPosterUrl(item.poster_path) || "",
 				}
@@ -179,6 +183,7 @@ async function selectItem(item: SearchResult) {
 			author: item.author || "",
 			year: item.year || "",
 			recommendation_source: "",
+			owned: false,
 			watched: false,
 			poster: item.poster || "",
 			seasons: "",
@@ -193,12 +198,13 @@ async function selectItem(item: SearchResult) {
 function handleSubmit(e: SubmitEvent) {
 	e.preventDefault()
 	if (!form.title) return
-	const { watched, ...rest } = form
+	const { owned, watched, ...rest } = form
 	const base: Record<string, unknown> = {
 		...rest,
 		id: Date.now(),
 		year: parseInt(form.year, 10) || new Date().getFullYear(),
 		seasons: form.seasons ? parseInt(form.seasons, 10) : undefined,
+		acquired_at: owned ? new Date().toISOString() : null,
 		consumed_at: watched ? new Date().toISOString() : null,
 	}
 	if (isBook || type === "comics") {
@@ -354,6 +360,10 @@ function getIcon() {
 								bind:value={form.recommendation_source}
 								placeholder="Friend tip..."
 							/>
+						</label>
+						<label class="checkbox">
+							<input type="checkbox" bind:checked={form.owned} />
+							<span>Already in my collection</span>
 						</label>
 						<label class="checkbox">
 							<input type="checkbox" bind:checked={form.watched} />

@@ -1,6 +1,7 @@
 <script lang="ts">
+import FixPosterPanel from "$lib/components/FixPosterPanel.svelte"
 import type { Item, TabType } from "$lib/types"
-import { isConsumed } from "$lib/types"
+import { isAcquired, isConsumed } from "$lib/types"
 
 let {
 	item,
@@ -27,8 +28,10 @@ interface FormState {
 	country: string
 	recommendation_source: string
 	seasons: string | number
+	owned: boolean
 	watched: boolean
 	rating: number
+	poster: string
 }
 
 let form = $state<FormState>({
@@ -40,19 +43,38 @@ let form = $state<FormState>({
 	country: "country" in item ? item.country || "" : "",
 	recommendation_source: item.recommendation_source || "",
 	seasons: "seasons" in item ? item.seasons || "" : "",
+	owned: isAcquired(item),
 	watched: isConsumed(item),
 	rating: item.rating || 0,
+	poster: item.poster || "",
 })
+
+function handlePosterPick(updates: {
+	poster: string
+	title?: string
+	year?: number
+}) {
+	form = {
+		...form,
+		poster: updates.poster,
+		...(updates.title !== undefined && updates.title !== ""
+			? { title: updates.title }
+			: {}),
+		...(updates.year !== undefined ? { year: updates.year } : {}),
+	}
+}
 
 function handleSubmit(e: SubmitEvent) {
 	e.preventDefault()
 	if (!form.title) return
-	const { watched, ...rest } = form
+	const { owned, watched, ...rest } = form
 	onSave(item.id, {
 		...rest,
 		year: parseInt(String(form.year), 10) || item.year,
 		seasons: form.seasons ? parseInt(String(form.seasons), 10) : undefined,
 		rating: form.rating || undefined,
+		poster: form.poster.trim() ? form.poster.trim() : undefined,
+		acquired_at: owned ? item.acquired_at || new Date().toISOString() : null,
 		consumed_at: watched ? item.consumed_at || new Date().toISOString() : null,
 	} as Partial<Item>)
 }
@@ -73,6 +95,19 @@ function handleSubmit(e: SubmitEvent) {
 		</div>
 		<div class="modal-body">
 			<form onsubmit={handleSubmit}>
+				{#if form.poster}
+					<div class="form-poster">
+						<img src={form.poster} alt="" />
+						<button
+							type="button"
+							onclick={() => {
+								form = { ...form, poster: "" }
+							}}
+						>
+							Remove poster
+						</button>
+					</div>
+				{/if}
 				<div class="form-grid">
 					<label class="full">
 						<span>Title *</span>
@@ -111,6 +146,10 @@ function handleSubmit(e: SubmitEvent) {
 						/>
 					</label>
 					<label class="checkbox">
+						<input type="checkbox" bind:checked={form.owned} />
+						<span>In my collection</span>
+					</label>
+					<label class="checkbox">
 						<input type="checkbox" bind:checked={form.watched} />
 						<span>{isMedia ? "Watched" : "Read"}</span>
 					</label>
@@ -132,6 +171,14 @@ function handleSubmit(e: SubmitEvent) {
 							</div>
 						</div>
 					{/if}
+				</div>
+
+				<div class="edit-poster-block">
+					<h4 class="edit-poster-heading">Poster</h4>
+					<p class="edit-poster-hint">
+						Search TMDB/OMDb or paste an image URL. A result may update title/year.
+					</p>
+					<FixPosterPanel {item} {type} onPick={handlePosterPick} />
 				</div>
 
 				<div class="form-actions">

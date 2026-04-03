@@ -28,10 +28,17 @@ export interface BaseItem {
 	title: string
 	year: number
 	recommendation_source?: string
+	/** When the item was added to the physical collection (bought, etc.). */
+	acquired_at: string | null
 	/** When the item was watched/read; null = not consumed yet. */
 	consumed_at: string | null
 	poster?: string // Poster image URL
 	rating?: number // Rating 1-5 (only if consumed)
+}
+
+/** Derived: item is in the collection when acquired_at is set. */
+export function isAcquired(item: BaseItem): boolean {
+	return item.acquired_at != null && item.acquired_at !== ""
 }
 
 /** Derived: item is consumed (watched or read) when consumed_at is set. */

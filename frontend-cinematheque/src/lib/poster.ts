@@ -22,10 +22,13 @@ export const getSmallPoster = (
 	return url.replace("/w300/", "/w154/").replace("/w500/", "/w154/")
 }
 
-// Helper to get large poster URL for modal
+// Helper to get large poster URL for item detail modal (TMDB w500)
 export const getLargePoster = (
 	url: string | null | undefined,
 ): string | null => {
 	if (!url) return null
-	return url.replace("/w154/", "/w300/").replace("/w92/", "/w300/")
+	return url
+		.replace("/w154/", "/w500/")
+		.replace("/w92/", "/w500/")
+		.replace("/w300/", "/w500/")
 }
