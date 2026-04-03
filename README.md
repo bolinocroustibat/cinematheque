@@ -1,179 +1,138 @@
 # Cinémathèque
 
-A React application to manage your collection of movies, TV series, books, and comics.
+Manage movies, TV series, books, and comics: a **Django API** (PostgreSQL), a **React** app (main UI), and a **SvelteKit** app (color palettes). See [`AGENTS.md`](AGENTS.md) for stack details and day-to-day commands.
 
-## 🐳 Installation with Docker
+| Part | Path |
+|------|------|
+| API | `backend/` |
+| Main UI (React, Vite, Bun) | `frontend-cinematheque/` |
+| Palettes (SvelteKit) | `frontend-palettes/` |
+
+---
+
+## Installation with Docker
 
 ### Prerequisites
+
 - Docker
 - Docker Compose
 
-### Quick Start
+### Quick start
 
-1. Launch the application with Docker Compose:
 ```bash
+cp .env.example .env   # edit secrets (see Environment variables below)
 docker compose up -d
 ```
 
-2. Access the application:
-   - Open your browser at `http://localhost:3000`
+Open:
 
-### Docker Configuration
+- **Cinematheque:** `http://localhost:3000` (override with `APP_PORT`)
+- **Palettes:** `http://localhost:3001` (`MOVIES_PALETTES_PORT`)
+- **API:** `http://localhost:8000` (`API_PORT`)
 
-You can customize the port and environment variables via the `docker-compose.yaml` file or environment variables:
+### Docker configuration
 
 ```bash
-# Change the port (default: 3000)
 APP_PORT=8080 docker compose up -d
-
-# Specify an image version
 TAG=v1.0.0 docker compose up -d
 ```
 
-**Environment Variables for Docker:**
+Compose reads the project root `.env`.
 
-Create a `.env` file in the project root with your API keys (see [Environment Variables](#environment-variables) section). Docker Compose will automatically load variables from the `.env` file and pass them to the build process.
+**Environment variables (summary):**
 
-The required variables are:
-- `VITE_TMDB_KEY` - Your TMDB API key
-- `VITE_OMDB_KEY` - Your OMDb API key (optional)
-- `API_URL` - Backend API base URL (e.g. `http://localhost:8000`; optional if `API_PORT` matches)
+- **Backend:** `DJANGO_SECRET_KEY`, Postgres (`POSTGRES_*`), `CORS_*` as in [`.env.example`](.env.example).
+- **Poster auto-fill** (films / documentaries on the server): `TMDB_API_KEY` (required for that feature); `OMDB_API_KEY` optional (TMDB fallback).
+- **Cinematheque build:** `VITE_TMDB_KEY` and optional `VITE_OMDB_KEY` for client-side search (add item, fix poster, suggestions). Omit if you do not use those flows.
+- **Optional:** `LLM_API_KEY` (movie recommendations), `API_URL` (backend URL baked into the Cinematheque build; default `http://localhost:<API_PORT>`).
 
-### Useful Docker Commands
+### Useful Docker commands
 
 ```bash
-# View logs
-docker compose logs -f frontend
-
-# Stop the application
+docker compose logs -f
 docker compose down
-
-# Rebuild the image
 docker compose build --no-cache
-
-# Restart
 docker compose restart
 ```
 
-## 💻 Installation without Docker (Local Development)
+---
+
+## Installation without Docker (local development)
 
 ### Prerequisites
-- Node.js 18+ or Bun
-- pnpm, npm, yarn, or bun
 
-### Environment Variables
+- **PostgreSQL** (for Django)
+- **Python 3.12+** and [`uv`](https://docs.astral.sh/uv/)
+- **Bun** (recommended) or pnpm / npm / yarn for the frontends
 
-Before running the application, you need to configure your environment variables:
+### Environment variables
 
-1. Copy the example environment file:
 ```bash
 cp .env.example .env
 ```
 
-2. Edit `.env` and fill in your API keys:
-   - **VITE_TMDB_KEY**: Get your API key from [TMDB Settings](https://www.themoviedb.org/settings/api)
-   - **VITE_OMDB_KEY**: Get your API key from [OMDb API](https://www.omdbapi.com/apikey.aspx) (optional, used as fallback for movie posters)
-   - **API_URL**: Backend API base URL for movies, series, and books (e.g. `http://localhost:8000`; same variable as Palettes)
+Use the same categories as in the Docker section: backend keys (`TMDB_API_KEY`, `OMDB_API_KEY`, `LLM_API_KEY`, …), plus `VITE_*` for Cinematheque when you need TMDB/OMDb in the browser. `API_URL` / `API_PORT` point the frontends at the API (Vite loads env from the repo root when `docker-compose.yaml` is present).
 
-### Installation
+### Backend
 
-1. Navigate to the frontend directory:
 ```bash
-cd frontend-cinematheque
+cd backend
+uv sync
+uv run python manage.py migrate
+# dev (single worker), from backend/:
+uv run uvicorn cinematheque.asgi:application --reload --host 0.0.0.0 --port 8000
 ```
 
-2. Install dependencies:
-
-**With Bun (recommended):**
-```bash
-bun install
-```
-
-**With pnpm:**
-```bash
-pnpm install
-```
-
-**With npm:**
-```bash
-npm install
-```
-
-3. Start the development server:
-```bash
-# With Bun
-bun run dev
-
-# With pnpm
-pnpm dev
-
-# With npm
-npm run dev
-```
-
-3. Open your browser at `http://localhost:5173` (Vite default port)
-
-### Production Build
-
-To build the application for production:
+### Frontend — Cinematheque (React)
 
 ```bash
 cd frontend-cinematheque
+bun install    # or: pnpm install / npm install
+bun run dev    # or: pnpm dev / npm run dev
+```
 
-# With Bun
+Dev server default: **`http://localhost:5173`** (Vite).
+
+**Production build**
+
+```bash
+cd frontend-cinematheque
 bun run build
-
-# With pnpm
-pnpm build
-
-# With npm
-npm run build
+# output: frontend-cinematheque/dist/
 ```
 
-Files will be generated in the `frontend-cinematheque/dist/` folder.
-
-### Preview Production Build
-
-To test the production build locally:
+**Preview production build**
 
 ```bash
-cd frontend-cinematheque
-
-# With Bun
 bun run preview
-
-# With pnpm
-pnpm preview
-
-# With npm
-npm run preview
 ```
 
-### Linting & formatting (Biome)
+### Frontend — Palettes (SvelteKit)
 
-The frontend uses [Biome](https://biomejs.dev/) for lint and format. From the `frontend-cinematheque/` directory:
+```bash
+cd frontend-palettes
+bun install
+bun run dev
+```
 
-- **Check** (lint + format check): `bunx biome check .`
-- **Fix and format**: `bunx biome check --write .` — applies safe fixes and reformats files
+Use the same `API_URL` / `ENVIRONMENT` pattern as in `AGENTS.md`.
 
-Use `--unsafe` with `--write` to also apply fixes Biome considers unsafe (e.g. removing `!important` in CSS).
+### Linting and formatting
 
-## 📜 Available Scripts
+- **Backend:** from `backend/`: `uv run ruff check --fix . && uv run ruff format .`
+- **Frontends:** from each app dir: `bunx biome check --write .` (Palettes: `bunx biome check --write src/`)
 
-- `dev` - Start the Vite development server
-- `build` - Build the application for production
-- `preview` - Preview the production build
+### Available scripts (Cinematheque)
 
-## 📁 Project Structure
+- `dev` — Vite dev server  
+- `build` — production build  
+- `preview` — preview `dist/`
 
-- `frontend-cinematheque/` - Main React application (movies, series, books, comics)
-  - `src/` - React source code
-    - `components/` - React components
-    - `api/` - API calls
-    - `utils/` - Utilities
-  - `public/` - Static files (CSS, manifest, etc.)
-  - `index.html` - HTML entry point (in root or frontend)
-  - `vite.config.ts` - Vite configuration
-  - `Dockerfile` - Docker configuration
-  - `server.ts` - Bun server for production
-- `docker-compose.yaml` - Docker Compose configuration
+---
+
+## Project structure
+
+- `backend/` — Django project; routers under `cinematheque_app/api/`
+- `frontend-cinematheque/` — `src/`, `public/`, `vite.config.ts`, `server.ts` (Bun in production)
+- `frontend-palettes/` — SvelteKit routes and `src/lib/`
+- `docker-compose.yaml` — Postgres, API, both frontends
