@@ -10,7 +10,13 @@ interface HeaderProps {
 	// Tabs
 	tab: TabType
 	onTabChange: (tab: TabType) => void
-	counts: { movies: number; series: number; books: number; comics: number }
+	counts: {
+		movies: number
+		documentaries: number
+		series: number
+		books: number
+		comics: number
+	}
 
 	// Search & Filters
 	search: string
@@ -92,6 +98,14 @@ const Header = ({
 				</button>
 				<button
 					type="button"
+					className={`tab ${tab === "documentaries" ? "active" : ""}`}
+					onClick={() => onTabChange("documentaries")}
+				>
+					Documentaries{" "}
+					<span className="tab-count">{counts.documentaries}</span>
+				</button>
+				<button
+					type="button"
 					className={`tab ${tab === "series" ? "active" : ""}`}
 					onClick={() => onTabChange("series")}
 				>
@@ -153,7 +167,7 @@ const Header = ({
 					<option value="alpha-asc">A → Z</option>
 					<option value="alpha-desc">Z → A</option>
 					<option value="director">
-						{tab === "films"
+						{tab === "films" || tab === "documentaries"
 							? "Réalisateur"
 							: tab === "series"
 								? "Créateur"

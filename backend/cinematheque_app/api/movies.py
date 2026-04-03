@@ -30,6 +30,7 @@ class MovieSchema(Schema):
     director: str | None
     year: str | None
     slug: str
+    type: str
     palettes: list[PaletteSchema]
     poster: str | None = None
     rating: int | None = None
@@ -98,6 +99,7 @@ def get_movies(request):
                 "director": movie.director,
                 "year": movie.year,
                 "slug": slug,
+                "type": movie.type or "movie",
                 "palettes": palettes_data,
                 "poster": movie.poster,
                 "rating": movie.rating,

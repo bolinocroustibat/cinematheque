@@ -1,11 +1,14 @@
 // Tab identifiers (used in UI)
-export type TabType = "films" | "series" | "books" | "comics"
+export type TabType = "films" | "documentaries" | "series" | "books" | "comics"
 
 // Item type identifiers (used in storage/API)
 export type ItemType = "film" | "series" | "book" | "comic"
 
 // Book subtype (book or comic)
 export type BookType = "book" | "comic"
+
+// Movie vs documentary (backend `Movie.type`)
+export type FilmType = "movie" | "documentary"
 
 // Base item - common fields for all collection items
 export interface BaseItem {
@@ -24,10 +27,11 @@ export function isConsumed(item: BaseItem): boolean {
 	return item.consumed_at != null && item.consumed_at !== ""
 }
 
-// Movie item
+// Movie item (fiction vs documentary, same API table)
 export interface Movie extends BaseItem {
 	director?: string
 	country?: string
+	type?: FilmType
 }
 
 // Series item

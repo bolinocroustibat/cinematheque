@@ -46,7 +46,7 @@ const FixPosterModal = ({
 			try {
 				const searchResults = await searchTMDB(
 					query,
-					type === "films" ? "movie" : "tv",
+					type === "series" ? "tv" : "movie",
 					{ year },
 				)
 				setResults(
@@ -62,7 +62,7 @@ const FixPosterModal = ({
 				// Search failed, results stay empty
 			}
 		} else {
-			const omdbType = type === "films" ? "movie" : "series"
+			const omdbType = type === "series" ? "series" : "movie"
 			const yearParam = year ? `&y=${year}` : ""
 			try {
 				const res = await fetch(

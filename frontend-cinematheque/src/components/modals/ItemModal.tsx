@@ -123,7 +123,7 @@ const ItemModal = ({
 					</div>
 				</div>
 				<div className="modal-actions">
-					{tab === "films" || tab === "series" ? (
+					{tab === "films" || tab === "documentaries" || tab === "series" ? (
 						<>
 							<a
 								className="btn btn-secondary"

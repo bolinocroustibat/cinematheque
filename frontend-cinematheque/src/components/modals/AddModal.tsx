@@ -53,10 +53,11 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 	const [mode, setMode] = useState<"search" | "manual">("search")
 	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-	const isFilm = type === "films"
+	const isFilmTab = type === "films"
+	const isDocumentaryTab = type === "documentaries"
 	const isSeries = type === "series"
 	const isBook = type === "books"
-	const isMedia = isFilm || isSeries
+	const isMedia = isFilmTab || isSeries || isDocumentaryTab
 
 	useEffect(() => {
 		if (timeoutRef.current) clearTimeout(timeoutRef.current)
@@ -71,7 +72,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 				if (isMedia) {
 					const searchResults = await searchTMDB(
 						query,
-						isFilm ? "movie" : "tv",
+						isSeries ? "tv" : "movie",
 						{
 							language: "fr-FR",
 						},
@@ -113,14 +114,14 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 			}
 			setSearching(false)
 		}, 400)
-	}, [query, isFilm, isMedia])
+	}, [query, isSeries, isMedia])
 
 	const selectItem = async (item: SearchResult) => {
 		if (isMedia) {
 			try {
 				const { details, credits } = await getDetailsWithCredits(
 					Number(item.id),
-					isFilm ? "movie" : "tv",
+					isSeries ? "tv" : "movie",
 					{ language: "fr-FR" },
 				)
 
@@ -134,7 +135,7 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 					return
 				}
 
-				if (isFilm) {
+				if (isFilmTab || isDocumentaryTab) {
 					setForm({
 						title: item.title || "",
 						director:
@@ -204,19 +205,27 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 			;(base as { type: "book" | "comic" }).type =
 				type === "books" ? "book" : "comic"
 		}
+		if (isFilmTab) {
+			;(base as { type: "movie" | "documentary" }).type = "movie"
+		}
+		if (isDocumentaryTab) {
+			;(base as { type: "movie" | "documentary" }).type = "documentary"
+		}
 		onAdd(base as unknown as Item)
 		onClose()
 	}
 
 	const getTypeLabel = () => {
-		if (isFilm) return "un film"
+		if (isFilmTab) return "un film"
+		if (isDocumentaryTab) return "un documentaire"
 		if (isSeries) return "une série"
 		if (isBook) return "un livre"
 		return "une BD"
 	}
 
 	const getIcon = () => {
-		if (isFilm) return "🎬"
+		if (isFilmTab) return "🎬"
+		if (isDocumentaryTab) return "🎥"
 		if (isSeries) return "📺"
 		if (isBook) return "📚"
 		return "📖"
@@ -331,12 +340,16 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 								</label>
 								<label>
 									<span>
-										{isFilm ? "Réalisateur" : isSeries ? "Créateur" : "Auteur"}
+										{isFilmTab || isDocumentaryTab
+											? "Réalisateur"
+											: isSeries
+												? "Créateur"
+												: "Auteur"}
 									</span>
 									<input
 										type="text"
 										value={
-											isFilm
+											isFilmTab || isDocumentaryTab
 												? form.director
 												: isSeries
 													? form.creator
@@ -345,8 +358,11 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 										onChange={(e) =>
 											setForm({
 												...form,
-												[isFilm ? "director" : isSeries ? "creator" : "author"]:
-													e.target.value,
+												[isFilmTab || isDocumentaryTab
+													? "director"
+													: isSeries
+														? "creator"
+														: "author"]: e.target.value,
 											})
 										}
 									/>

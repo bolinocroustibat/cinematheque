@@ -36,12 +36,16 @@ export const loadFromAPI = async () => {
 		booksRes.json(),
 	])
 
-	const loadedMovies = (moviesData.movies ?? []).map(
+	const mapFilmKind = (m: Record<string, unknown>): "movie" | "documentary" =>
+		m.type === "documentary" ? "documentary" : "movie"
+
+	const allFilms = (moviesData.movies ?? []).map(
 		(m: Record<string, unknown>) => ({
 			id: toNum(m.id),
 			title: String(m.title ?? ""),
 			director: m.director != null ? String(m.director) : undefined,
 			year: toNum(m.year),
+			type: mapFilmKind(m),
 			consumed_at: mapConsumedAt(
 				m as { consumed_at?: string | null; watched?: unknown },
 			),
@@ -53,6 +57,13 @@ export const loadFromAPI = async () => {
 					: undefined,
 			country: m.country != null ? String(m.country) : undefined,
 		}),
+	)
+
+	const loadedMovies = allFilms.filter(
+		(f: { type: string }) => f.type !== "documentary",
+	)
+	const loadedDocumentaries = allFilms.filter(
+		(f: { type: string }) => f.type === "documentary",
 	)
 
 	const loadedSeries = (seriesData.series ?? []).map(
@@ -105,7 +116,13 @@ export const loadFromAPI = async () => {
 		(b: { type: string }) => b.type === "comic",
 	)
 
-	return { loadedMovies, loadedSeries, loadedBooks, loadedComics }
+	return {
+		loadedMovies,
+		loadedDocumentaries,
+		loadedSeries,
+		loadedBooks,
+		loadedComics,
+	}
 }
 
 export const saveToAPI = async (
@@ -113,12 +130,13 @@ export const saveToAPI = async (
 	series: unknown[],
 	books: unknown[],
 	comics: unknown[],
+	documentaries: unknown[],
 ) => {
 	const [moviesRes, seriesRes, booksRes] = await Promise.all([
 		fetch(`${API_URL}/api/movies`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(movies),
+			body: JSON.stringify([...movies, ...documentaries]),
 		}),
 		fetch(`${API_URL}/api/series`, {
 			method: "POST",

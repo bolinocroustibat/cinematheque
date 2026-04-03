@@ -27,7 +27,8 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 	const [suggestions, setSuggestions] = useState<Suggestion[]>([])
 	const [loading, setLoading] = useState(false)
 
-	const isMedia = type === "films" || type === "series"
+	const isMedia =
+		type === "films" || type === "documentaries" || type === "series"
 
 	// Get author from item if it exists
 	const itemAuthor = "author" in item ? item.author : undefined
@@ -42,7 +43,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 					// TMDB pour films/séries
 					const searchResults = await searchTMDB(
 						item.title,
-						type === "films" ? "movie" : "tv",
+						type === "series" ? "tv" : "movie",
 						{ year: item.year },
 					)
 
@@ -50,7 +51,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 						const id = searchResults[0].id
 						const recommendations = await getRecommendations(
 							id,
-							type === "films" ? "movie" : "tv",
+							type === "series" ? "tv" : "movie",
 							{ language: "fr-FR" },
 						)
 
@@ -148,7 +149,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 				// Ajout film/série depuis TMDB
 				const { details, credits } = await getDetailsWithCredits(
 					Number(sug.id),
-					type === "films" ? "movie" : "tv",
+					type === "series" ? "tv" : "movie",
 					{ language: "fr-FR" },
 				)
 
@@ -162,10 +163,11 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 					consumed_at: null,
 				}
 
-				if (type === "films") {
+				if (type === "films" || type === "documentaries") {
 					newItem.director =
 						credits.crew?.find((c) => c.job === "Director")?.name || ""
 					newItem.country = details.production_countries?.[0]?.name || ""
+					newItem.type = type === "documentaries" ? "documentary" : "movie"
 				} else {
 					newItem.creator = details.created_by?.[0]?.name || ""
 					newItem.country = details.origin_country?.[0] || ""

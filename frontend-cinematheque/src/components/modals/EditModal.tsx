@@ -23,7 +23,7 @@ interface FormState {
 }
 
 const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
-	const isFilm = type === "films"
+	const isFilm = type === "films" || type === "documentaries"
 	const isSeries = type === "series"
 	const isMedia = isFilm || isSeries
 

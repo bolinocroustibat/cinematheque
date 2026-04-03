@@ -23,6 +23,7 @@ const App = () => {
 	const [tab, setTab] = useState<TabType>("films")
 
 	const [movies, setMovies] = useState<Item[]>([])
+	const [documentaries, setDocumentaries] = useState<Item[]>([])
 	const [series, setSeries] = useState<Item[]>([])
 	const [books, setBooks] = useState<Book[]>([])
 	const [comics, setComics] = useState<Book[]>([])
@@ -40,19 +41,23 @@ const App = () => {
 	const items =
 		tab === "films"
 			? movies
-			: tab === "series"
-				? series
-				: tab === "books"
-					? books
-					: comics
+			: tab === "documentaries"
+				? documentaries
+				: tab === "series"
+					? series
+					: tab === "books"
+						? books
+						: comics
 	const setItems: React.Dispatch<React.SetStateAction<Item[]>> =
 		tab === "films"
 			? setMovies
-			: tab === "series"
-				? setSeries
-				: tab === "books"
-					? setBooks
-					: setComics
+			: tab === "documentaries"
+				? setDocumentaries
+				: tab === "series"
+					? setSeries
+					: tab === "books"
+						? setBooks
+						: setComics
 
 	const [posterProgress, setPosterProgress] = useState("")
 
@@ -86,10 +91,16 @@ const App = () => {
 	const loadFromBackend = useCallback(async () => {
 		setSyncing(true)
 		try {
-			const { loadedMovies, loadedSeries, loadedBooks, loadedComics } =
-				await loadFromAPI()
+			const {
+				loadedMovies,
+				loadedDocumentaries,
+				loadedSeries,
+				loadedBooks,
+				loadedComics,
+			} = await loadFromAPI()
 
 			setMovies(loadedMovies)
+			setDocumentaries(loadedDocumentaries)
 			setSeries(loadedSeries)
 			setBooks(loadedBooks)
 			setComics(loadedComics)
@@ -97,11 +108,28 @@ const App = () => {
 			setSyncing(false)
 			setLastSync(new Date())
 
-			const missingPosters = loadedMovies.filter((f: Item) => !f.poster).length
-			if (missingPosters > 0) {
-				const updatedMovies = await fetchMissingPosters(loadedMovies)
-				setMovies(updatedMovies)
-				await saveToAPI(updatedMovies, loadedSeries, loadedBooks, loadedComics)
+			let nextMovies = loadedMovies
+			let nextDocumentaries = loadedDocumentaries
+			let needPosterSave = false
+
+			if (loadedMovies.some((f: Item) => !f.poster)) {
+				nextMovies = await fetchMissingPosters(loadedMovies)
+				setMovies(nextMovies)
+				needPosterSave = true
+			}
+			if (loadedDocumentaries.some((f: Item) => !f.poster)) {
+				nextDocumentaries = await fetchMissingPosters(loadedDocumentaries)
+				setDocumentaries(nextDocumentaries)
+				needPosterSave = true
+			}
+			if (needPosterSave) {
+				await saveToAPI(
+					nextMovies,
+					loadedSeries,
+					loadedBooks,
+					loadedComics,
+					nextDocumentaries,
+				)
 			}
 		} catch (e) {
 			console.error("Erreur chargement:", e)
@@ -141,11 +169,21 @@ const App = () => {
 		}
 	}, [comics])
 
+	useEffect(() => {
+		if (documentaries.length > 0) {
+			localStorage.setItem(
+				"cine_documentaries_cache",
+				JSON.stringify(documentaries),
+			)
+		}
+	}, [documentaries])
+
 	const saveToBackend = async (
 		newMovies?: Item[],
 		newSeries?: Item[],
 		newBooks?: Book[],
 		newComics?: Book[],
+		newDocumentaries?: Item[],
 	) => {
 		setSyncing(true)
 		try {
@@ -154,6 +192,7 @@ const App = () => {
 				newSeries !== undefined ? newSeries : series,
 				newBooks !== undefined ? newBooks : books,
 				newComics !== undefined ? newComics : comics,
+				newDocumentaries !== undefined ? newDocumentaries : documentaries,
 			)
 			setLastSync(new Date())
 		} catch (e) {
@@ -218,12 +257,14 @@ const App = () => {
 		newSeries?: Item[],
 		newBooks?: Book[],
 		newComics?: Book[],
+		newDocumentaries?: Item[],
 	) => {
 		saveToBackend(
 			newMovies !== undefined ? newMovies : movies,
 			newSeries !== undefined ? newSeries : series,
 			newBooks !== undefined ? newBooks : books,
 			newComics !== undefined ? newComics : comics,
+			newDocumentaries !== undefined ? newDocumentaries : documentaries,
 		)
 	}
 
@@ -245,10 +286,11 @@ const App = () => {
 			})
 
 		// Save to API
-		if (tab === "films") saveAll(newItems, undefined, undefined, undefined)
-		else if (tab === "series")
-			saveAll(undefined, newItems, undefined, undefined)
-		else if (tab === "books") saveAll(undefined, undefined, newItems, undefined)
+		if (tab === "films") saveAll(newItems)
+		else if (tab === "documentaries")
+			saveAll(undefined, undefined, undefined, undefined, newItems)
+		else if (tab === "series") saveAll(undefined, newItems)
+		else if (tab === "books") saveAll(undefined, undefined, newItems)
 		else saveAll(undefined, undefined, undefined, newItems)
 	}
 
@@ -256,10 +298,11 @@ const App = () => {
 		const newItems = [item, ...items]
 		setItems(newItems)
 
-		if (tab === "films") saveAll(newItems, undefined, undefined, undefined)
-		else if (tab === "series")
-			saveAll(undefined, newItems, undefined, undefined)
-		else if (tab === "books") saveAll(undefined, undefined, newItems, undefined)
+		if (tab === "films") saveAll(newItems)
+		else if (tab === "documentaries")
+			saveAll(undefined, undefined, undefined, undefined, newItems)
+		else if (tab === "series") saveAll(undefined, newItems)
+		else if (tab === "books") saveAll(undefined, undefined, newItems)
 		else saveAll(undefined, undefined, undefined, newItems)
 	}
 
@@ -268,10 +311,11 @@ const App = () => {
 		setItems(newItems)
 		setSelected(null)
 
-		if (tab === "films") saveAll(newItems, undefined, undefined, undefined)
-		else if (tab === "series")
-			saveAll(undefined, newItems, undefined, undefined)
-		else if (tab === "books") saveAll(undefined, undefined, newItems, undefined)
+		if (tab === "films") saveAll(newItems)
+		else if (tab === "documentaries")
+			saveAll(undefined, undefined, undefined, undefined, newItems)
+		else if (tab === "series") saveAll(undefined, newItems)
+		else if (tab === "books") saveAll(undefined, undefined, newItems)
 		else saveAll(undefined, undefined, undefined, newItems)
 	}
 
@@ -302,10 +346,11 @@ const App = () => {
 		}
 		setShowFix(false)
 
-		if (tab === "films") saveAll(newItems, undefined, undefined, undefined)
-		else if (tab === "series")
-			saveAll(undefined, newItems, undefined, undefined)
-		else if (tab === "books") saveAll(undefined, undefined, newItems, undefined)
+		if (tab === "films") saveAll(newItems)
+		else if (tab === "documentaries")
+			saveAll(undefined, undefined, undefined, undefined, newItems)
+		else if (tab === "series") saveAll(undefined, newItems)
+		else if (tab === "books") saveAll(undefined, undefined, newItems)
 		else saveAll(undefined, undefined, undefined, newItems)
 	}
 
@@ -315,10 +360,11 @@ const App = () => {
 		if (selected?.id === id) setSelected({ ...selected, ...updates } as Item)
 		setShowEdit(false)
 
-		if (tab === "films") saveAll(newItems, undefined, undefined, undefined)
-		else if (tab === "series")
-			saveAll(undefined, newItems, undefined, undefined)
-		else if (tab === "books") saveAll(undefined, undefined, newItems, undefined)
+		if (tab === "films") saveAll(newItems)
+		else if (tab === "documentaries")
+			saveAll(undefined, undefined, undefined, undefined, newItems)
+		else if (tab === "series") saveAll(undefined, newItems)
+		else if (tab === "books") saveAll(undefined, undefined, newItems)
 		else saveAll(undefined, undefined, undefined, newItems)
 	}
 
@@ -342,6 +388,7 @@ const App = () => {
 				onTabChange={setTab}
 				counts={{
 					movies: movies.length,
+					documentaries: documentaries.length,
 					series: series.length,
 					books: books.length,
 					comics: comics.length,
@@ -447,7 +494,7 @@ const App = () => {
 				) : (
 					<div className="empty">
 						{items.length === 0
-							? `Aucun ${tab === "films" ? "film" : tab === "series" ? "série" : tab === "books" ? "livre" : "BD"} ajouté. Clique sur "+ Ajouter" !`
+							? `Aucun ${tab === "films" ? "film" : tab === "documentaries" ? "documentaire" : tab === "series" ? "série" : tab === "books" ? "livre" : "BD"} ajouté. Clique sur "+ Ajouter" !`
 							: "Aucun résultat"}
 					</div>
 				)}
