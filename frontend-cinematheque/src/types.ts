@@ -12,7 +12,6 @@ export interface BaseItem {
 	id: number // Unique identifier (timestamp-based)
 	title: string
 	year: number
-	genre?: string // Comma-separated genres
 	recommendation_source?: string
 	/** When the item was watched/read; null = not consumed yet. */
 	consumed_at: string | null
@@ -28,14 +27,12 @@ export function isConsumed(item: BaseItem): boolean {
 // Movie item
 export interface Movie extends BaseItem {
 	director?: string
-	actors?: string // Comma-separated
 	country?: string
 }
 
 // Series item
 export interface Series extends BaseItem {
 	creator?: string
-	actors?: string // Comma-separated
 	country?: string
 	seasons?: number
 }
@@ -44,6 +41,7 @@ export interface Series extends BaseItem {
 export interface Book extends BaseItem {
 	type: BookType
 	author?: string
+	country?: string
 }
 
 // Any collection item

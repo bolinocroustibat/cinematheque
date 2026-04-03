@@ -15,12 +15,10 @@ interface FormState {
 	creator: string
 	author: string
 	year: string
-	genre: string
 	recommendation_source: string
 	watched: boolean
 	poster: string
 	seasons: string
-	actors?: string
 	country?: string
 }
 
@@ -35,7 +33,6 @@ interface SearchResult {
 	first_air_date?: string
 	year?: string
 	author?: string
-	genre?: string
 }
 
 const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
@@ -48,7 +45,6 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 		creator: "",
 		author: "",
 		year: "",
-		genre: "",
 		recommendation_source: "",
 		watched: false,
 		poster: "",
@@ -108,7 +104,6 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 										"http:",
 										"https:",
 									) || null,
-								genre: item.volumeInfo.categories?.join(", ") || "",
 							}),
 						) || [],
 					)
@@ -147,12 +142,6 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 						creator: "",
 						author: "",
 						year: item.release_date?.split("-")[0] || "",
-						genre: details.genres?.map((g) => g.name).join(", ") || "",
-						actors:
-							credits.cast
-								?.slice(0, 4)
-								.map((a) => a.name)
-								.join(", ") || "",
 						country: details.production_countries?.[0]?.name || "",
 						recommendation_source: "",
 						watched: false,
@@ -166,12 +155,6 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 						creator: details.created_by?.[0]?.name || "",
 						author: "",
 						year: item.first_air_date?.split("-")[0] || "",
-						genre: details.genres?.map((g) => g.name).join(", ") || "",
-						actors:
-							credits.cast
-								?.slice(0, 4)
-								.map((a) => a.name)
-								.join(", ") || "",
 						country: details.origin_country?.[0] || "",
 						seasons: String(details.number_of_seasons || ""),
 						recommendation_source: "",
@@ -194,7 +177,6 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 				creator: "",
 				author: item.author || "",
 				year: item.year || "",
-				genre: item.genre || "",
 				recommendation_source: "",
 				watched: false,
 				poster: item.poster || "",
@@ -389,17 +371,30 @@ const AddModal = ({ type, onClose, onAdd }: AddModalProps) => {
 										/>
 									</label>
 								)}
-								<label className={isSeries ? "" : "full"}>
-									<span>Genre</span>
-									<input
-										type="text"
-										value={form.genre}
-										onChange={(e) =>
-											setForm({ ...form, genre: e.target.value })
-										}
-										placeholder={isMedia ? "Drame, Action..." : "Roman, SF..."}
-									/>
-								</label>
+								{isMedia && (
+									<label className="full">
+										<span>Pays</span>
+										<input
+											type="text"
+											value={form.country ?? ""}
+											onChange={(e) =>
+												setForm({ ...form, country: e.target.value })
+											}
+										/>
+									</label>
+								)}
+								{(isBook || type === "comics") && (
+									<label className="full">
+										<span>Pays</span>
+										<input
+											type="text"
+											value={form.country ?? ""}
+											onChange={(e) =>
+												setForm({ ...form, country: e.target.value })
+											}
+										/>
+									</label>
+								)}
 								<label className="full">
 									<span>Source / Reco</span>
 									<input

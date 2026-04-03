@@ -81,24 +81,6 @@ const ItemModal = ({
 							</p>
 						</div>
 					)}
-					{item.genre && (
-						<div className="modal-section">
-							<h4>Genre</h4>
-							<div>
-								{item.genre.split(",").map((g) => (
-									<span key={g} className="tag">
-										{g.trim()}
-									</span>
-								))}
-							</div>
-						</div>
-					)}
-					{"actors" in item && item.actors && (
-						<div className="modal-section">
-							<h4>Casting</h4>
-							<p>{item.actors}</p>
-						</div>
-					)}
 					{item.recommendation_source && (
 						<div className="modal-section">
 							<h4>Recommandation</h4>

@@ -15,8 +15,6 @@ interface FormState {
 	creator: string
 	author: string
 	year: string | number
-	genre: string
-	actors: string
 	country: string
 	recommendation_source: string
 	seasons: string | number
@@ -35,8 +33,6 @@ const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
 		creator: "creator" in item ? item.creator || "" : "",
 		author: "author" in item ? item.author || "" : "",
 		year: item.year || "",
-		genre: item.genre || "",
-		actors: "actors" in item ? item.actors || "" : "",
 		country: "country" in item ? item.country || "" : "",
 		recommendation_source: item.recommendation_source || "",
 		seasons: "seasons" in item ? item.seasons || "" : "",
@@ -130,27 +126,16 @@ const EditModal = ({ item, type, onClose, onSave }: EditModalProps) => {
 									/>
 								</label>
 							)}
-							<label className={isSeries ? "" : "full"}>
-								<span>Genre</span>
+							<label className="full">
+								<span>Pays</span>
 								<input
 									type="text"
-									value={form.genre}
-									onChange={(e) => setForm({ ...form, genre: e.target.value })}
-									placeholder={isMedia ? "Drame, Action..." : "Roman, SF..."}
+									value={form.country}
+									onChange={(e) =>
+										setForm({ ...form, country: e.target.value })
+									}
 								/>
 							</label>
-							{isMedia && (
-								<label className="full">
-									<span>Casting</span>
-									<input
-										type="text"
-										value={form.actors}
-										onChange={(e) =>
-											setForm({ ...form, actors: e.target.value })
-										}
-									/>
-								</label>
-							)}
 							<label className="full">
 								<span>Source / Reco</span>
 								<input

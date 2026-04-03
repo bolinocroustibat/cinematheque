@@ -159,26 +159,16 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 					title: sug.title,
 					year: parseInt(sug.year, 10) || 0,
 					poster: sug.poster,
-					genre: details.genres?.map((g) => g.name).join(", ") || "",
 					consumed_at: null,
 				}
 
 				if (type === "films") {
 					newItem.director =
 						credits.crew?.find((c) => c.job === "Director")?.name || ""
-					newItem.actors =
-						credits.cast
-							?.slice(0, 4)
-							.map((a) => a.name)
-							.join(", ") || ""
 					newItem.country = details.production_countries?.[0]?.name || ""
 				} else {
 					newItem.creator = details.created_by?.[0]?.name || ""
-					newItem.actors =
-						credits.cast
-							?.slice(0, 4)
-							.map((a) => a.name)
-							.join(", ") || ""
+					newItem.country = details.origin_country?.[0] || ""
 					newItem.seasons = details.number_of_seasons || 0
 				}
 
@@ -196,7 +186,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 					title: info.title || sug.title,
 					author: info.authors?.join(", ") || "",
 					year: parseInt(info.publishedDate?.split("-")[0], 10) || 0,
-					genre: info.categories?.join(", ") || "",
+					type: type === "comics" ? ("comic" as const) : ("book" as const),
 					poster:
 						info.imageLinks?.thumbnail?.replace("http:", "https:") ||
 						sug.poster,
@@ -228,7 +218,7 @@ const Suggestions = ({ item, type, existingIds, onAdd }: SuggestionsProps) => {
 			<div className="suggestions-title">
 				{isMedia
 					? "Si vous avez aimé, vous aimerez peut-être..."
-					: "Du même auteur ou genre..."}
+					: "Du même auteur ou thème..."}
 			</div>
 			<div className="suggestions-grid">
 				{suggestions.map((sug) => (

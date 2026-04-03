@@ -10,7 +10,6 @@ import FixPosterModal from "@/components/modals/FixPosterModal"
 import ItemModal from "@/components/modals/ItemModal"
 import type {
 	Book,
-	BookType,
 	FilterType,
 	Item,
 	SortType,
@@ -22,56 +21,19 @@ import { getGroupKey, sortItems } from "@/utils/sorting"
 
 const App = () => {
 	const [tab, setTab] = useState<TabType>("films")
-	const normalizeConsumedAt = <
-		T extends { consumed_at?: string | null; watched?: boolean },
-	>(
-		item: T,
-	): Omit<T, "watched"> & { consumed_at: string | null } => {
-		const { watched, ...rest } = item
-		return {
-			...rest,
-			consumed_at:
-				rest.consumed_at != null && rest.consumed_at !== ""
-					? rest.consumed_at
-					: watched
-						? new Date().toISOString()
-						: null,
-		} as Omit<T, "watched"> & { consumed_at: string | null }
-	}
 
-	const [movies, setMovies] = useState<Item[]>(() => {
-		const cached = localStorage.getItem("cine_movies_cache")
-		const raw = cached ? JSON.parse(cached) : []
-		return raw.map((m: Item & { watched?: boolean }) => normalizeConsumedAt(m))
-	})
-	const [series, setSeries] = useState<Item[]>(() => {
-		const cached = localStorage.getItem("cine_series_cache")
-		const raw = cached ? JSON.parse(cached) : []
-		return raw.map((s: Item & { watched?: boolean }) => normalizeConsumedAt(s))
-	})
-	const [books, setBooks] = useState<Book[]>(() => {
-		const cached = localStorage.getItem("cine_books_cache")
-		const raw = cached ? JSON.parse(cached) : []
-		return raw.map((p: Book & { type?: BookType; watched?: boolean }) =>
-			normalizeConsumedAt({ ...p, type: p.type ?? "book" }),
-		)
-	})
-	const [comics, setComics] = useState<Book[]>(() => {
-		const cached = localStorage.getItem("cine_comics_cache")
-		const raw = cached ? JSON.parse(cached) : []
-		return raw.map((p: Book & { type?: BookType; watched?: boolean }) =>
-			normalizeConsumedAt({ ...p, type: p.type ?? "comic" }),
-		)
-	})
+	const [movies, setMovies] = useState<Item[]>([])
+	const [series, setSeries] = useState<Item[]>([])
+	const [books, setBooks] = useState<Book[]>([])
+	const [comics, setComics] = useState<Book[]>([])
 	const [search, setSearch] = useState("")
 	const [filter, setFilter] = useState<FilterType>("all")
-	const [genre, setGenre] = useState("")
 	const [selected, setSelected] = useState<Item | null>(null)
 	const [view, setView] = useState<ViewType>("grid")
 	const [cardSize, setCardSize] = useState(120)
 	const [showAdd, setShowAdd] = useState(false)
 	const [showFix, setShowFix] = useState(false)
-	const [loading, setLoading] = useState(false)
+	const [loading, setLoading] = useState(true)
 	const [syncing, setSyncing] = useState(false)
 	const [_lastSync, setLastSync] = useState<Date | null>(null)
 
@@ -148,10 +110,9 @@ const App = () => {
 		}
 	}, [fetchMissingPosters])
 
-	// Load from API on mount
+	// Load from API on mount (no localStorage seed — server is source of truth)
 	useEffect(() => {
-		const cached = localStorage.getItem("cine_movies_cache")
-		if (!cached) setLoading(true)
+		setLoading(true)
 		loadFromBackend()
 	}, [loadFromBackend])
 
@@ -205,14 +166,6 @@ const App = () => {
 	const [showSeparators, setShowSeparators] = useState(true)
 	const [showEdit, setShowEdit] = useState(false)
 
-	const genres = [
-		...new Set(
-			items.flatMap((f) =>
-				f.genre ? f.genre.split(",").map((g) => g.trim()) : [],
-			),
-		),
-	].sort()
-
 	const filtered = sortItems(
 		items.filter((f) => {
 			if (
@@ -230,8 +183,6 @@ const App = () => {
 				return false
 			if (filter === "watched" && !isConsumed(f)) return false
 			if (filter === "unwatched" && isConsumed(f)) return false
-			if (genre && !f.genre?.toLowerCase().includes(genre.toLowerCase()))
-				return false
 			return true
 		}),
 		sort,
@@ -371,7 +322,7 @@ const App = () => {
 		else saveAll(undefined, undefined, undefined, newItems)
 	}
 
-	if (loading && movies.length === 0) {
+	if (loading) {
 		return (
 			<div className="loading-screen">
 				<div className="loading-spinner" />
@@ -399,9 +350,6 @@ const App = () => {
 				onSearchChange={setSearch}
 				filter={filter}
 				onFilterChange={setFilter}
-				genre={genre}
-				onGenreChange={setGenre}
-				genres={genres}
 				sort={sort}
 				onSortChange={setSort}
 				view={view}

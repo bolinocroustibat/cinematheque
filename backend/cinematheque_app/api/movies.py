@@ -31,6 +31,11 @@ class MovieSchema(Schema):
     year: str | None
     slug: str
     palettes: list[PaletteSchema]
+    poster: str | None = None
+    rating: int | None = None
+    recommendation_source: str | None = None
+    consumed_at: str | None = None
+    country: str | None = None
 
 
 class MoviesResponse(Schema):
@@ -94,6 +99,13 @@ def get_movies(request):
                 "year": movie.year,
                 "slug": slug,
                 "palettes": palettes_data,
+                "poster": movie.poster,
+                "rating": movie.rating,
+                "recommendation_source": movie.recommendation_source,
+                "consumed_at": movie.consumed_at.isoformat()
+                if movie.consumed_at
+                else None,
+                "country": movie.country,
             }
         )
 

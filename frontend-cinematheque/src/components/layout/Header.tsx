@@ -17,9 +17,6 @@ interface HeaderProps {
 	onSearchChange: (value: string) => void
 	filter: FilterType
 	onFilterChange: (filter: FilterType) => void
-	genre: string
-	onGenreChange: (genre: string) => void
-	genres: string[]
 
 	// Sort & View
 	sort: SortType
@@ -44,9 +41,6 @@ const Header = ({
 	onSearchChange,
 	filter,
 	onFilterChange,
-	genre,
-	onGenreChange,
-	genres,
 	sort,
 	onSortChange,
 	view,
@@ -57,11 +51,6 @@ const Header = ({
 	onCardSizeChange,
 }: HeaderProps) => {
 	const isReadType = tab === "books" || tab === "comics"
-
-	const handleTabChange = (newTab: TabType) => {
-		onTabChange(newTab)
-		onGenreChange("")
-	}
 
 	return (
 		<header className="header">
@@ -97,28 +86,28 @@ const Header = ({
 				<button
 					type="button"
 					className={`tab ${tab === "films" ? "active" : ""}`}
-					onClick={() => handleTabChange("films")}
+					onClick={() => onTabChange("films")}
 				>
 					Movies <span className="tab-count">{counts.movies}</span>
 				</button>
 				<button
 					type="button"
 					className={`tab ${tab === "series" ? "active" : ""}`}
-					onClick={() => handleTabChange("series")}
+					onClick={() => onTabChange("series")}
 				>
 					Séries <span className="tab-count">{counts.series}</span>
 				</button>
 				<button
 					type="button"
 					className={`tab ${tab === "books" ? "active" : ""}`}
-					onClick={() => handleTabChange("books")}
+					onClick={() => onTabChange("books")}
 				>
 					Livres <span className="tab-count">{counts.books}</span>
 				</button>
 				<button
 					type="button"
 					className={`tab ${tab === "comics" ? "active" : ""}`}
-					onClick={() => handleTabChange("comics")}
+					onClick={() => onTabChange("comics")}
 				>
 					BD <span className="tab-count">{counts.comics}</span>
 				</button>
@@ -154,14 +143,6 @@ const Header = ({
 					{isReadType ? "Lus" : "Vus"}
 				</button>
 				<div className="filter-divider" />
-				<select value={genre} onChange={(e) => onGenreChange(e.target.value)}>
-					<option value="">Genre</option>
-					{genres.map((g) => (
-						<option key={g} value={g}>
-							{g}
-						</option>
-					))}
-				</select>
 				<select
 					value={sort}
 					onChange={(e) => onSortChange(e.target.value as SortType)}

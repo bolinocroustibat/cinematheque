@@ -21,6 +21,7 @@ class Book(MediaItem):
         choices=BOOK_TYPE_CHOICES,
         help_text="Kind of publication: book or comic.",
     )
+    country = models.CharField(max_length=255, null=True, blank=True)
     author = models.CharField(max_length=255, null=True, blank=True)
     pages = models.IntegerField(
         null=True,

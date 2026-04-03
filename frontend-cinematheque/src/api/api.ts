@@ -47,13 +47,11 @@ export const loadFromAPI = async () => {
 			),
 			poster: m.poster != null ? String(m.poster) : undefined,
 			rating: m.rating != null ? toNum(m.rating) : undefined,
-			genre: m.genre != null ? String(m.genre) : undefined,
 			recommendation_source:
 				m.recommendation_source != null
 					? String(m.recommendation_source)
 					: undefined,
 			country: m.country != null ? String(m.country) : undefined,
-			actors: m.actors != null ? String(m.actors) : undefined,
 		}),
 	)
 
@@ -68,16 +66,17 @@ export const loadFromAPI = async () => {
 			),
 			poster: s.poster != null ? String(s.poster) : undefined,
 			rating: s.rating != null ? toNum(s.rating) : undefined,
-			genre: s.genre != null ? String(s.genre) : undefined,
 			recommendation_source:
 				s.recommendation_source != null
 					? String(s.recommendation_source)
 					: undefined,
 			country: s.country != null ? String(s.country) : undefined,
-			actors: s.actors != null ? String(s.actors) : undefined,
 			seasons: s.seasons != null ? toNum(s.seasons) : undefined,
 		}),
 	)
+
+	const mapBookKind = (b: Record<string, unknown>): "book" | "comic" =>
+		b.type === "comic" ? "comic" : "book"
 
 	const allBooks = (booksData.books ?? []).map(
 		(b: Record<string, unknown>) => ({
@@ -85,17 +84,17 @@ export const loadFromAPI = async () => {
 			title: String(b.title ?? ""),
 			author: b.author != null ? String(b.author) : undefined,
 			year: toNum(b.year),
-			type: (b.type === "comic" ? "comic" : "book") as "book" | "comic",
+			type: mapBookKind(b),
 			consumed_at: mapConsumedAt(
 				b as { consumed_at?: string | null; watched?: unknown },
 			),
 			poster: b.poster != null ? String(b.poster) : undefined,
 			rating: b.rating != null ? toNum(b.rating) : undefined,
-			genre: b.genre != null ? String(b.genre) : undefined,
 			recommendation_source:
 				b.recommendation_source != null
 					? String(b.recommendation_source)
 					: undefined,
+			country: b.country != null ? String(b.country) : undefined,
 		}),
 	)
 
