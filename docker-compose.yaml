@@ -38,8 +38,9 @@ services:
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
 
-      # Database settings
+      # Database settings (HOST must be the Compose service name from inside the container)
       - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=db
 
       # CORS settings
       - CORS_ORIGIN_ALLOW_ALL=${CORS_ORIGIN_ALLOW_ALL:-True}
