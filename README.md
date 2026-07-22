@@ -25,13 +25,13 @@ docker compose up -d
 
 Open:
 
-- **Palettes:** `http://localhost:3001` (`MOVIES_PALETTES_PORT`)
+- **Palettes:** `http://localhost:3001` (`FRONTEND_PALETTES_PORT`)
 - **API:** `http://localhost:8000` (`API_PORT`)
 
 ### Docker configuration
 
 ```bash
-MOVIES_PALETTES_PORT=8080 docker compose up -d
+FRONTEND_PALETTES_PORT=8080 docker compose up -d
 TAG=v1.0.0 docker compose up -d
 ```
 
