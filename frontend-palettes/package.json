@@ -1,6 +1,6 @@
 {
 	"name": "movies-palettes-frontend",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"type": "module",
 	"scripts": {
 		"dev": "bunx --bun vite dev",
