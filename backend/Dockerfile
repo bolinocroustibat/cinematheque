@@ -14,14 +14,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install dependencies first (cached unless lockfile/pyproject change)
-COPY pyproject.toml uv.lock ./
+# Copy source and install dependencies
+COPY . .
 RUN uv sync --locked --no-dev --no-install-project
-
-# Set work directory and install dependencies in a new environment
-WORKDIR /app
-# Sync the project, asserting the lockfile is up to date
-RUN uv sync --locked
 
 # Document that the container listens on internal port 8000
 EXPOSE 8000
