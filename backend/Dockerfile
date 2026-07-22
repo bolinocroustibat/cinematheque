@@ -1,16 +1,22 @@
-# Use Python 3.14-slim as base image (alpine is smaller, but longer to build and less compatible)
+# python:3.14-slim (alpine is smaller, but longer to build and less compatible)
 FROM python:3.14-slim
 # Copy latest uv binary from official image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Python environment variables:
-# PYTHONDONTWRITEBYTECODE=1: Prevents Python from writing .pyc files (speeds up development and reduces container size)
-# PYTHONUNBUFFERED=1: Prevents Python from buffering stdout/stderr (ensures log messages are output immediately)
+# PYTHONDONTWRITEBYTECODE=1: no .pyc files (smaller image, faster in containers)
+# PYTHONUNBUFFERED=1: logs immediately
+# UV_COMPILE_BYTECODE=1: compile deps at install time
+# UV_LINK_MODE=copy: copy from cache instead of hardlinking (safer in Docker layers)
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
 
-# Copy the project into the image
-ADD . /app
+WORKDIR /app
+
+# Install dependencies first (cached unless lockfile/pyproject change)
+COPY pyproject.toml uv.lock ./
+RUN uv sync --locked --no-dev --no-install-project
 
 # Set work directory and install dependencies in a new environment
 WORKDIR /app

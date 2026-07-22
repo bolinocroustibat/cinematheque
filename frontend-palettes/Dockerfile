@@ -1,5 +1,5 @@
 # Build stage
-FROM oven/bun:latest as builder
+FROM oven/bun:latest AS builder
 WORKDIR /app
 
 # Copy package files
@@ -14,14 +14,14 @@ COPY . .
 # Build the application
 RUN bun run build
 
-# Production stage
+# Production stage — runtime deps only
 FROM oven/bun:latest
 WORKDIR /app
 
-# Copy built assets and dependencies
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production
+
 COPY --from=builder /app/build ./
-COPY --from=builder /app/package.json /app/bun.lock ./
-COPY --from=builder /app/node_modules ./node_modules
 
 # Expose the application port
 EXPOSE 3000
