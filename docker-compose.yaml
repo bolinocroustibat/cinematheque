@@ -26,7 +26,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     volumes:
-      - static_volume:/app/static
+      - static_volume:/app/staticfiles
     ports:
       - "${API_PORT:-8000}:8000"
     environment:
@@ -44,7 +44,7 @@ services:
 
       # CORS settings
       - CORS_ORIGIN_ALLOW_ALL=${CORS_ORIGIN_ALLOW_ALL:-True}
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:${APP_PORT:-3000}}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:${MOVIES_PALETTES_PORT:-3001}}
 
       # Movie recommendations LLM (Gemini today; same env if you swap provider)
       - LLM_API_KEY=${LLM_API_KEY}
@@ -67,26 +67,6 @@ services:
       start_period: 30s
     depends_on:
       db:
-        condition: service_healthy
-
-  frontend-cinematheque:
-    container_name: cinematheque-frontend
-    image: ghcr.io/bolinocroustibat/cinematheque-frontend:${TAG:-latest}
-    build:
-      context: ./frontend-cinematheque
-      dockerfile: Dockerfile
-      args:
-        - VITE_TMDB_KEY=${VITE_TMDB_KEY}
-        - VITE_OMDB_KEY=${VITE_OMDB_KEY}
-        - ENVIRONMENT=${ENVIRONMENT:-unknown}
-    restart: unless-stopped
-    ports:
-      - "${APP_PORT:-3000}:3000"
-    environment:
-      - ENVIRONMENT=${ENVIRONMENT:-unknown}
-      - API_URL=http://backend:8000
-    depends_on:
-      backend:
         condition: service_healthy
 
   frontend-palettes:

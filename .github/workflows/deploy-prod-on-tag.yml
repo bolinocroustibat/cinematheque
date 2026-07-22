@@ -33,9 +33,7 @@ jobs:
 
       - name: Bump version in package.json to ${{ github.ref_name }}
         run: |
-          for dir in frontend-cinematheque frontend-palettes; do
-            sed -E -i 's/"version":[[:space:]]*"[^"]*"/"version": "${{ github.ref_name }}"/g' "${dir}/package.json"
-          done
+          sed -E -i 's/"version":[[:space:]]*"[^"]*"/"version": "${{ github.ref_name }}"/g' frontend-palettes/package.json
 
       - name: Commit and push updated pyproject.toml and package.json
         uses: stefanzweifel/git-auto-commit-action@v5
@@ -74,19 +72,6 @@ jobs:
           tags: |
             ghcr.io/bolinocroustibat/cinematheque-backend:latest
             ghcr.io/bolinocroustibat/cinematheque-backend:${{ github.ref_name }}
-
-      - name: Build and push frontend-cinematheque Docker images to ghcr.io/${{ github.repository }}
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend-cinematheque
-          push: true
-          build-args: |
-            VITE_TMDB_KEY=${{ secrets.VITE_TMDB_KEY }}
-            VITE_OMDB_KEY=${{ secrets.VITE_OMDB_KEY }}
-            ENVIRONMENT=${{ vars.PRODUCTION_ENVIRONMENT || 'production' }}
-          tags: |
-            ghcr.io/bolinocroustibat/cinematheque-frontend:latest
-            ghcr.io/bolinocroustibat/cinematheque-frontend:${{ github.ref_name }}
 
       - name: Build and push frontend-palettes Docker images to ghcr.io/${{ github.repository }}
         uses: docker/build-push-action@v5
