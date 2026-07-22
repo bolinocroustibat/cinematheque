@@ -7,6 +7,17 @@ from django.utils.safestring import mark_safe
 from .models import Book, Movie, MovieColorPalette, Series
 
 
+def poster_thumbnail(obj, *, height: int = 60):
+    """Render a small poster preview from the URLField, or an em dash."""
+    if not obj.poster:
+        return "—"
+    return format_html(
+        '<img src="{}" alt="" style="height:{}px;width:auto;border-radius:2px;" />',
+        obj.poster,
+        height,
+    )
+
+
 class MovieColorPaletteInline(admin.TabularInline):
     model = MovieColorPalette
     extra = 0
@@ -21,6 +32,7 @@ class MovieColorPaletteInline(admin.TabularInline):
 @admin.register(Movie)
 class MovieAdmin(admin.ModelAdmin):
     list_display = (
+        "poster_thumb",
         "title",
         "director",
         "year",
@@ -28,10 +40,11 @@ class MovieAdmin(admin.ModelAdmin):
         "scan_status_short",
         "created_at",
     )
+    list_display_links = ("poster_thumb", "title")
     list_filter = ("type",)
     search_fields = ("title", "director", "year")
     date_hierarchy = "created_at"
-    readonly_fields = ("created_at",)
+    readonly_fields = ("created_at", "poster_preview")
     list_per_page = 25
 
     fieldsets = (
@@ -39,6 +52,17 @@ class MovieAdmin(admin.ModelAdmin):
             None,
             {
                 "fields": ("title", "type", "year", "director"),
+            },
+        ),
+        (
+            "Poster",
+            {
+                "fields": (
+                    "poster",
+                    "poster_preview",
+                    "rating",
+                    "recommendation_source",
+                ),
             },
         ),
         (
@@ -62,6 +86,14 @@ class MovieAdmin(admin.ModelAdmin):
         ),
     )
 
+    @admin.display(description="Poster")
+    def poster_thumb(self, obj):
+        return poster_thumbnail(obj, height=48)
+
+    @admin.display(description="Poster preview")
+    def poster_preview(self, obj):
+        return poster_thumbnail(obj, height=240)
+
     def scan_status_short(self, obj):
         if not obj.scan_status:
             return "—"
@@ -76,11 +108,20 @@ class MovieAdmin(admin.ModelAdmin):
 
 @admin.register(Series)
 class SeriesAdmin(admin.ModelAdmin):
-    list_display = ("title", "creator", "year", "seasons", "episodes", "created_at")
+    list_display = (
+        "poster_thumb",
+        "title",
+        "creator",
+        "year",
+        "seasons",
+        "episodes",
+        "created_at",
+    )
+    list_display_links = ("poster_thumb", "title")
     list_filter = ()
     search_fields = ("title", "creator", "year")
     date_hierarchy = "created_at"
-    readonly_fields = ("created_at",)
+    readonly_fields = ("created_at", "poster_preview")
     list_per_page = 25
 
     fieldsets = (
@@ -88,6 +129,17 @@ class SeriesAdmin(admin.ModelAdmin):
             None,
             {
                 "fields": ("title", "year", "creator"),
+            },
+        ),
+        (
+            "Poster",
+            {
+                "fields": (
+                    "poster",
+                    "poster_preview",
+                    "rating",
+                    "recommendation_source",
+                ),
             },
         ),
         (
@@ -110,14 +162,31 @@ class SeriesAdmin(admin.ModelAdmin):
         ),
     )
 
+    @admin.display(description="Poster")
+    def poster_thumb(self, obj):
+        return poster_thumbnail(obj, height=48)
+
+    @admin.display(description="Poster preview")
+    def poster_preview(self, obj):
+        return poster_thumbnail(obj, height=240)
+
 
 @admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
-    list_display = ("title", "author", "year", "type", "pages", "created_at")
+    list_display = (
+        "poster_thumb",
+        "title",
+        "author",
+        "year",
+        "type",
+        "pages",
+        "created_at",
+    )
+    list_display_links = ("poster_thumb", "title")
     list_filter = ("type",)
     search_fields = ("title", "author", "year", "isbn", "publisher")
     date_hierarchy = "created_at"
-    readonly_fields = ("created_at",)
+    readonly_fields = ("created_at", "poster_preview")
     list_per_page = 25
 
     fieldsets = (
@@ -125,6 +194,17 @@ class BookAdmin(admin.ModelAdmin):
             None,
             {
                 "fields": ("title", "type", "year", "author"),
+            },
+        ),
+        (
+            "Cover",
+            {
+                "fields": (
+                    "poster",
+                    "poster_preview",
+                    "rating",
+                    "recommendation_source",
+                ),
             },
         ),
         (
@@ -146,6 +226,14 @@ class BookAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+    @admin.display(description="Cover")
+    def poster_thumb(self, obj):
+        return poster_thumbnail(obj, height=48)
+
+    @admin.display(description="Cover preview")
+    def poster_preview(self, obj):
+        return poster_thumbnail(obj, height=240)
 
 
 @admin.register(MovieColorPalette)
