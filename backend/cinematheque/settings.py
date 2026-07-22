@@ -41,6 +41,19 @@ CORS_ALLOWED_ORIGINS: list[str] = [
     if origin.strip()
 ]
 
+# CSRF: required for HTTPS admin login behind a reverse proxy (Django 4+)
+# Defaults to CORS_ALLOWED_ORIGINS when CSRF_TRUSTED_ORIGINS is unset.
+CSRF_TRUSTED_ORIGINS: list[str] = [
+    origin.strip()
+    for origin in str(
+        os.getenv("CSRF_TRUSTED_ORIGINS", os.getenv("CORS_ALLOWED_ORIGINS", ""))
+    ).split(",")
+    if origin.strip()
+]
+
+# Trust X-Forwarded-Proto from nginx so Django sees the request as HTTPS
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 
 # Application definition
 
