@@ -10,13 +10,14 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy
+    UV_LINK_MODE=copy \
+    UV_NO_DEV=1
 
 WORKDIR /app
 
 # Copy source and install dependencies
 COPY . .
-RUN uv sync --locked --no-dev --no-install-project
+RUN uv sync --locked --no-install-project
 
 # Document that the container listens on internal port 8000
 EXPOSE 8000
