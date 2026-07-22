@@ -1,0 +1,22 @@
+# Version control
+.git
+.gitignore
+
+# Local env / tooling
+.venv
+.ruff_cache
+__pycache__
+*.py[cod]
+.python-version
+
+# Local DB / collected static (Postgres + volume in Compose)
+*.db
+staticfiles
+
+# Env / IDE / OS
+.env*
+*.log
+.vscode
+.idea
+.cursor
+.DS_Store
