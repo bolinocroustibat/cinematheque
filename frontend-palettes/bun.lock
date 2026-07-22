@@ -1,20 +1,21 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "movies-palettes-frontend",
       "dependencies": {
+        "@sveltejs/kit": "^2.37.0",
         "chroma-js": "^3.1.2",
+        "svelte": "^5.38.6",
       },
       "devDependencies": {
         "@biomejs/biome": "^2.3",
         "@steeze-ui/heroicons": "^2.4.2",
         "@steeze-ui/svelte-icon": "^1.6.2",
-        "@sveltejs/kit": "^2.37.0",
         "@sveltejs/vite-plugin-svelte": "^5.1.1",
         "@tailwindcss/vite": "^4.1.12",
         "@types/chroma-js": "^2.4.5",
-        "svelte": "^5.38.6",
         "svelte-adapter-bun": "^0.5.2",
         "svelte-check": "^4.3.1",
         "typescript": "^5.9.2",

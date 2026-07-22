@@ -1,21 +1,15 @@
 # Build stage
-FROM oven/bun:latest AS builder
+FROM oven/bun:slim AS builder
 WORKDIR /app
 
-# Copy package files
 COPY package.json bun.lock ./
-
-# Install dependencies
 RUN bun install --frozen-lockfile
 
-# Copy source files
 COPY . .
-
-# Build the application
 RUN bun run build
 
-# Production stage — runtime deps only
-FROM oven/bun:latest
+# Production stage
+FROM oven/bun:slim
 WORKDIR /app
 
 COPY package.json bun.lock ./
@@ -23,8 +17,10 @@ RUN bun install --frozen-lockfile --production
 
 COPY --from=builder /app/build ./
 
-# Expose the application port
-EXPOSE 3000
+ENV HOST=0.0.0.0 \
+    PORT=3000 \
+    HOST_HEADER=host \
+    PROTOCOL_HEADER=x-forwarded-proto
 
-# Start the application
-CMD ["bun", "index.js", "--port", "3000"]
+EXPOSE 3000
+CMD ["bun", "index.js"]
