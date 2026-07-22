@@ -5,7 +5,7 @@ Resolve poster image URLs via TMDB search, with OMDb fallback for movies.
 import logging
 from typing import Literal
 
-import httpx
+import niquests
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ OMDB_BASE_URL = "https://www.omdbapi.com"
 
 MediaType = Literal["movie", "tv"]
 
-REQUEST_TIMEOUT = httpx.Timeout(10.0)
+REQUEST_TIMEOUT = 10.0
 
 
 def _year_param(year: int | str | None) -> str | None:
@@ -62,15 +62,15 @@ def resolve_poster_url(
         params["year"] = year_str
 
     try:
-        with httpx.Client(timeout=REQUEST_TIMEOUT) as client:
-            r = client.get(f"{TMDB_BASE_URL}/{endpoint}", params=params)
+        with niquests.Session(timeout=REQUEST_TIMEOUT) as session:
+            r = session.get(f"{TMDB_BASE_URL}/{endpoint}", params=params)
             r.raise_for_status()
             data = r.json()
             results = data.get("results") or []
             first = results[0] if results else None
             if first and first.get("poster_path"):
                 return _tmdb_poster_url(first["poster_path"])
-    except (httpx.HTTPError, KeyError, TypeError, ValueError) as e:
+    except (niquests.RequestException, KeyError, TypeError, ValueError) as e:
         logger.debug("TMDB poster search failed for %r: %s", title, e)
 
     if media_type != "movie":
@@ -81,8 +81,8 @@ def resolve_poster_url(
         return None
 
     try:
-        with httpx.Client(timeout=REQUEST_TIMEOUT) as client:
-            r = client.get(
+        with niquests.Session(timeout=REQUEST_TIMEOUT) as session:
+            r = session.get(
                 OMDB_BASE_URL,
                 params={
                     "apikey": omdb_key,
@@ -96,7 +96,7 @@ def resolve_poster_url(
             poster = data.get("Poster")
             if poster and poster != "N/A":
                 return str(poster)
-    except (httpx.HTTPError, TypeError, ValueError) as e:
+    except (niquests.RequestException, TypeError, ValueError) as e:
         logger.debug("OMDb poster lookup failed for %r: %s", title, e)
 
     return None
