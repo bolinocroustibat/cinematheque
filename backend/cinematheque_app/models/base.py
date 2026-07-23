@@ -39,7 +39,10 @@ class MediaItem(models.Model):
         unique=True,
         null=True,
         blank=True,
-        help_text="File system path to the media file or folder.",
+        help_text=(
+            "Library-relative path to the media file or folder "
+            "(e.g. MOVIES/Title/file.mkv), without Drive mount prefix."
+        ),
     )
     year = models.CharField(
         max_length=10,
