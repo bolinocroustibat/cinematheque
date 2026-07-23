@@ -25,7 +25,14 @@ Do not include any text outside the JSON object."""
 
 
 class WatchedFilmSchema(Schema):
-    """A reference title+year (taste anchor); not implied to be recently viewed."""
+    """A reference title+year used as a taste/mood anchor (not a viewing history).
+
+    ``title`` is a free-form human-readable name. Only leading/trailing whitespace
+    is stripped; there is no other normalization, and the value is not matched
+    against the local movie DB or IMDB (no IDs). Prefer the commonly known or
+    original title as listed on IMDB (or similar), plus the correct release
+    ``year``, so the LLM can disambiguate remakes and homonyms.
+    """
 
     title: str
     year: int
@@ -160,13 +167,26 @@ def _recommendations_for_watched(watched: list[dict[str, Any]]) -> dict[str, Any
 
 @router.get("", response=MovieRecommendationResponse)
 def get_movies_recommendations(request, title: str, year: int):
-    """Recommendations using one reference film (query: title, year)."""
+    """Recommendations from one reference film (query: ``title``, ``year``).
+
+    Same title rules as ``WatchedFilmSchema``: free-form name (whitespace-stripped
+    only), not resolved against the DB or IMDB. Prefer a well-known / original
+    title plus release year for disambiguation.
+    """
     watched = _normalize_watched_titles([WatchedFilmSchema(title=title, year=year)])
     return _recommendations_for_watched(watched)
 
 
 @router.post("", response=MovieRecommendationResponse)
 def post_movies_recommendations(request, payload: MovieRecommendationsRequestSchema):
-    """Recommendations using one or more reference films (body: watched array, max 20)."""
+    """Recommendations from one or more reference films (body: ``watched``, max 20).
+
+    Each item is ``{ "title": str, "year": int }``. Titles are free-form
+    (whitespace-stripped only): not normalized further, not required to match
+    the local DB, and not IMDB IDs. Prefer commonly known or original titles
+    as on IMDB (or similar), with the correct release year, so the model can
+    identify the film. Returned recommendations follow the same loose title
+    convention (LLM-generated strings, not DB rows).
+    """
     watched = _normalize_watched_titles(payload.watched)
     return _recommendations_for_watched(watched)
