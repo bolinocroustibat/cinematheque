@@ -111,12 +111,18 @@ jobs:
             export TAG="${{ github.ref_name }}"
             docker compose pull
             docker compose down --remove-orphans
-            docker compose up -d
+            if ! docker compose up -d; then
+              echo "docker compose up failed"
+              docker compose ps -a
+              docker compose logs --tail 200
+              exit 1
+            fi
 
             sleep 3
             if ! docker compose ps --format json | grep -q "running"; then
               echo "Service failed to start properly"
-              docker compose logs
+              docker compose ps -a
+              docker compose logs --tail 200
               exit 1
             fi
 
