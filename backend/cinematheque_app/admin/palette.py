@@ -1,10 +1,8 @@
-import json
-
 from django.contrib import admin
 from django.utils.html import format_html
-from django.utils.safestring import mark_safe
 
 from ..models import MovieColorPalette
+from .utils import colors_swatches
 
 
 @admin.register(MovieColorPalette)
@@ -12,6 +10,7 @@ class MovieColorPaletteAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "movie_link",
+        "colors_preview",
         "active",
         "is_black_and_white",
         "clusters_nb",
@@ -39,8 +38,8 @@ class MovieColorPaletteAdmin(admin.ModelAdmin):
                     "calculation_date",
                     "calculation_duration_seconds",
                     "is_black_and_white",
-                    "colors",
                     "colors_preview",
+                    "colors",
                 ),
             },
         ),
@@ -62,38 +61,13 @@ class MovieColorPaletteAdmin(admin.ModelAdmin):
         ),
     )
 
+    @admin.display(description="Movie")
     def movie_link(self, obj):
         from django.urls import reverse
 
         url = reverse("admin:cinematheque_app_movie_change", args=[obj.movie_id])
         return format_html('<a href="{}">{}</a>', url, obj.movie)
 
-    movie_link.short_description = "Movie"
-
+    @admin.display(description="Colors")
     def colors_preview(self, obj):
-        if not obj.colors:
-            return "—"
-        try:
-            colors = json.loads(obj.colors)
-            if not isinstance(colors, list):
-                return "—"
-            preview = colors[:12]
-            spans = "".join(
-                format_html(
-                    '<span style="display:inline-block;width:24px;height:24px;'
-                    'background-color:{};border:1px solid #ccc;margin:1px;" '
-                    'title="{}"></span>',
-                    c if c.startswith("#") else f"#{c}",
-                    c,
-                )
-                for c in preview
-            )
-            return format_html(
-                '{} <span style="color:#666">({} colors)</span>',
-                mark_safe(spans) if spans else "—",
-                len(colors),
-            )
-        except Exception:
-            return obj.colors[:100] + "…" if len(obj.colors) > 100 else obj.colors
-
-    colors_preview.short_description = "Colors preview"
+        return colors_swatches(obj, max_colors=12, size=24)

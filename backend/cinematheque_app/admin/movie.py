@@ -1,18 +1,29 @@
 from django.contrib import admin
 
 from ..models import Movie, MovieColorPalette
-from .utils import poster_thumbnail
+from .utils import colors_swatches, poster_thumbnail
 
 
 class MovieColorPaletteInline(admin.TabularInline):
     model = MovieColorPalette
     extra = 0
     show_change_link = True
-    fields = ("id", "active", "calculation_date", "clusters_nb", "is_black_and_white")
-    readonly_fields = ("id", "calculation_date")
+    fields = (
+        "id",
+        "colors_preview",
+        "active",
+        "calculation_date",
+        "clusters_nb",
+        "is_black_and_white",
+    )
+    readonly_fields = ("id", "calculation_date", "colors_preview")
     ordering = ("-calculation_date",)
     verbose_name = "Color palette"
     verbose_name_plural = "Color palettes"
+
+    @admin.display(description="Colors")
+    def colors_preview(self, obj):
+        return colors_swatches(obj, max_colors=10, size=18)
 
 
 @admin.register(Movie)
