@@ -2,14 +2,8 @@ import json
 
 from django.utils.text import slugify
 from ninja import Router, Schema
-from ninja.errors import HttpError
 
 from cinematheque_app.models import Movie
-from cinematheque_app.services.poster_fetch import (
-    fill_missing_posters_for,
-    require_tmdb_api_key,
-    resolve_poster_url,
-)
 
 
 class PaletteSchema(Schema):
@@ -48,13 +42,6 @@ class MovieSchema(Schema):
 
 class MoviesResponse(Schema):
     movies: list[MovieSchema]
-
-
-class FillMissingPostersResponse(Schema):
-    updated: int
-    ids: list[int]
-    processed: int
-    more_pending: bool
 
 
 router = Router()
@@ -129,36 +116,3 @@ def get_movies(request):
         )
 
     return {"movies": movies_data}
-
-
-FILL_POSTER_MAX_BATCH = 50
-
-
-@router.post(
-    "fill-missing-posters",
-    response=FillMissingPostersResponse,
-)
-def fill_missing_posters(request, limit: int = 25):
-    """
-    Resolve poster URLs for up to ``limit`` movies currently missing a poster.
-
-    Re-call while ``more_pending`` is true to walk the queue in bounded HTTP requests.
-    As rows get a poster, the next call naturally takes the next slice of the queue.
-    """
-    try:
-        require_tmdb_api_key()
-    except RuntimeError as e:
-        raise HttpError(503, f"Poster fill is unavailable: {e}") from e
-
-    batch = max(1, min(int(limit), FILL_POSTER_MAX_BATCH))
-    result = fill_missing_posters_for(
-        Movie,
-        resolve=lambda m: resolve_poster_url(m.title, m.year, "movie"),
-        limit=batch,
-    )
-    return {
-        "updated": result.updated,
-        "ids": result.ids,
-        "processed": result.processed,
-        "more_pending": result.more_pending,
-    }
