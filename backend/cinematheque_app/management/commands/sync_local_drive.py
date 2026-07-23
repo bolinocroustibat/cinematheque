@@ -6,10 +6,14 @@ Movies/docs follow the legacy Colab notebook (one video file per folder).
 OpenCV length/frames is opt-in via ``--with-length`` (slow on large libraries).
 Series use season folders or flat episode filenames.
 
+With ``--prune``, propose deleting DB rows whose library folder no longer
+exists on disk (CLI confirm; cascades MovieColorPalette for movies).
+
     export DRIVE_BASE_PATH=".../My Drive"
     uv run manage.py sync_local_drive
     uv run manage.py sync_local_drive --movies --dry-run
     uv run manage.py sync_local_drive --movies --with-length
+    uv run manage.py sync_local_drive --movies --prune
 """
 
 import os
@@ -42,6 +46,14 @@ MOVIE_SCAN_FIELDS = (
     "frames",
 )
 SERIES_SCAN_FIELDS = ("title", "path", "seasons", "episodes", "year", "scan_status")
+
+# Rightmost "(YYYY" or "(YYYY, …)" — second group is treated as director unless
+# it is an actor credit (avec / with …).
+YEAR_GROUP = re.compile(r"\(((?:19|20)\d{2})(?:\s*,\s*([^)]+))?\)")
+DIRECTOR_ONLY = re.compile(
+    r"^(.*?) \(([A-ZÀ-ÖØ-Þ][\w'’-]+(?:[- ][A-ZÀ-ÖØ-Þ][\w'’-]+)+)\)$"
+)
+ACTOR_CREDIT_PREFIXES = ("avec ", "with ")
 
 YEAR_IN_PARENS = re.compile(r"\((19|20)\d{2}\)")
 SEASON_NUM = re.compile(r"season\s*(\d+)", re.IGNORECASE)
@@ -78,37 +90,119 @@ def prompt_apply(apply_all: bool) -> tuple[bool, bool, bool]:
     return False, apply_all, False
 
 
-# --- Movies / documentaries (Colab-style) --------------------------------
+# --- Movies / documentaries ----------------------------------------------
+
+
+def _clean_director(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    director = raw.strip()
+    if not director:
+        return None
+    lower = director.lower()
+    # Starring credits in folder names, not directors
+    if lower.startswith(ACTOR_CREDIT_PREFIXES):
+        return None
+    if lower.startswith(("doc ", "aka ", "about ")):
+        return None
+    if len(director) > 50 or len(director.split()) > 5:
+        return None
+    if any(
+        token in lower
+        for token in ("directed by", "television", "comedy", "film ", " movie")
+    ):
+        return None
+    if "," in director and not re.search(r"[A-ZÀ-ÖØ-Þ]", director.split(",", 1)[0]):
+        return None
+    return director or None
 
 
 def extract_movie_info_from_dir_name(name: str) -> tuple[str, str | None, str | None]:
+    """
+    Extract title, year, director from a folder name.
+
+    Prefers the rightmost ``(YYYY)`` / ``(YYYY, …)`` group. The second group is
+    the director unless it is an actor credit (``avec …`` / ``with …``). Also
+    handles ``(notes, YYYY)``. Falls back to ``Title (Director)`` then stripping
+    a trailing parenthesis.
+    """
     name = name.strip()
-    match = re.match(
-        r"^(.*?) \((\d{4}), ([A-Z][a-z]+(?:[- ][A-Z][a-z]+)+)\)$",
+    matches = list(YEAR_GROUP.finditer(name))
+    if matches:
+        m = matches[-1]
+        title = name[: m.start()].strip() or name
+        year = m.group(1)
+        director = _clean_director(m.group(2))
+        return title, year, director
+
+    # e.g. "Beer fest (teen movie, 2006)"
+    notes_year = re.search(
+        r"^(.*?)\s+\(([^)]*?),\s*((?:19|20)\d{2})\)\s*$",
         name,
     )
-    if match:
-        title, year, director = match.groups()
-        return title.strip(), year, director.strip()
-    match = re.match(r"^(.*?) \((\d{4})\)$", name)
-    if match:
-        title, year = match.groups()
+    if notes_year:
+        title, _notes, year = notes_year.groups()
         return title.strip(), year, None
-    match = re.match(
-        r"^(.*?) \(([A-Z][a-z]+(?:[- ][A-Z][a-z]+)+)\)$",
-        name,
-    )
+
+    match = DIRECTOR_ONLY.match(name)
     if match:
         title, director = match.groups()
-        return title.strip(), None, director.strip()
-    return re.sub(r" \([^)]+\)$", "", name).strip(), None, None
+        return title.strip(), None, _clean_director(director)
+
+    fallback = re.sub(r" \([^)]+\)$", "", name).strip()
+    return fallback or name, None, None
 
 
 def list_video_files(folder: Path) -> list[Path]:
+    """Videos directly in the folder; if none, one-level nested."""
     files: list[Path] = []
     for pattern in VIDEO_GLOBS:
         files.extend(folder.glob(pattern))
+    if not files:
+        for pattern in VIDEO_GLOBS:
+            files.extend(folder.glob(f"*/{pattern}"))
     return sorted(set(files), key=lambda p: p.name.lower())
+
+
+def is_junk_video(path: Path) -> bool:
+    """AppleDouble, samples, tiny release leftovers — not the movie itself."""
+    name = path.name
+    if name.startswith("._"):
+        return True
+    stem = path.stem.lower()
+    if stem in {"sample", "etrg"} or stem.startswith("sample"):
+        return True
+    return False
+
+
+def resolve_movie_video(folder: Path) -> tuple[Path | None, str]:
+    """
+    Pick a single video for the folder, or explain why not.
+
+    Ignores junk files; if several remain, keeps the dominant one when it is
+    clearly larger than the rest (movie + sample), otherwise reports multi.
+    """
+    files = [p for p in list_video_files(folder) if not is_junk_video(p)]
+    if not files:
+        return None, "No movie file found"
+    if len(files) == 1:
+        return files[0], "OK"
+
+    sized = sorted(
+        ((p, p.stat().st_size) for p in files),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+    biggest, big_size = sized[0]
+    second_size = sized[1][1]
+    # Dominant file (e.g. real rip next to a tiny sample/extra)
+    if big_size >= max(second_size * 5, 20 * 1024 * 1024):
+        return biggest, "OK"
+
+    status = "More than 1 video file found:"
+    for p, _ in sized:
+        status += f' "{p.name}"'
+    return None, status
 
 
 def video_length_and_frames(file_path: Path) -> tuple[int | None, int | None]:
@@ -132,6 +226,22 @@ def to_relative_path(file_path: Path, base: Path) -> str:
     return file_path.resolve().relative_to(base.resolve()).as_posix()
 
 
+def library_folder_key(path: str, library: str) -> str | None:
+    """
+    Top-level folder under ``library`` for a library-relative path.
+
+    ``MOVIES/Foo/bar.mkv`` → ``MOVIES/Foo``; ``SERIES/Show`` → ``SERIES/Show``.
+    """
+    prefix = f"{library}/"
+    if not path.startswith(prefix):
+        return None
+    rest = path[len(prefix) :]
+    folder = rest.split("/", 1)[0]
+    if not folder:
+        return None
+    return f"{library}/{folder}"
+
+
 def show_movie_diff(existing: Movie, new_data: dict) -> dict[str, dict]:
     changes: dict[str, dict] = {}
     for key in MOVIE_SCAN_FIELDS:
@@ -141,6 +251,14 @@ def show_movie_diff(existing: Movie, new_data: dict) -> dict[str, dict]:
         old_val = getattr(existing, key)
         if old_val != new_val:
             changes[key] = {"before": old_val, "after": new_val}
+    # Drop starring credits wrongly stored as director
+    old_director = existing.director
+    if (
+        old_director
+        and "director" not in changes
+        and old_director.strip().lower().startswith(ACTOR_CREDIT_PREFIXES)
+    ):
+        changes["director"] = {"before": old_director, "after": None}
     return changes
 
 
@@ -251,7 +369,8 @@ def analyze_show_folder(
 class Command(BaseCommand):
     help = (
         "Sync DRIVE_BASE_PATH/{MOVIES,DOCUMENTARIES,SERIES} into Movie and "
-        "Series rows. Omit flags to sync all three."
+        "Series rows. Omit flags to sync all three. Use --prune to propose "
+        "deleting DB rows whose library folder no longer exists on disk."
     )
 
     def add_arguments(self, parser):
@@ -260,6 +379,14 @@ class Command(BaseCommand):
         parser.add_argument("--series", action="store_true")
         parser.add_argument("--dry-run", action="store_true")
         parser.add_argument("--yes", action="store_true")
+        parser.add_argument(
+            "--prune",
+            action="store_true",
+            help=(
+                "After scanning, propose deleting DB rows whose library folder "
+                "no longer exists on disk (cascades color palettes for movies)"
+            ),
+        )
         parser.add_argument(
             "--with-length",
             action="store_true",
@@ -273,6 +400,7 @@ class Command(BaseCommand):
         dry_run: bool = options["dry_run"]
         apply_all: bool = options["yes"]
         with_length: bool = options["with_length"]
+        prune: bool = options["prune"]
 
         if dry_run and options["yes"]:
             self.stdout.write(self.style.WARNING("--yes is ignored during --dry-run"))
@@ -297,7 +425,13 @@ class Command(BaseCommand):
         if not (want_movies or want_docs or want_series):
             want_movies = want_docs = want_series = True
 
-        totals = {"created": 0, "updated": 0, "unchanged": 0, "skipped": 0}
+        totals = {
+            "created": 0,
+            "updated": 0,
+            "unchanged": 0,
+            "skipped": 0,
+            "deleted": 0,
+        }
 
         libraries: list[tuple[str, str]] = []
         if want_movies:
@@ -306,35 +440,45 @@ class Command(BaseCommand):
             libraries.append((LIBRARY_DOCUMENTARIES, "documentary"))
 
         for library, movie_type in libraries:
-            c, u, un, s, quit_, apply_all = self._scan_movies(
-                base, library, movie_type, dry_run, apply_all, with_length
+            c, u, un, s, d, quit_, apply_all = self._scan_movies(
+                base, library, movie_type, dry_run, apply_all, with_length, prune
             )
             totals["created"] += c
             totals["updated"] += u
             totals["unchanged"] += un
             totals["skipped"] += s
+            totals["deleted"] += d
             if quit_:
-                self._print_summary(dry_run, totals)
+                self._print_summary(dry_run, totals, prune)
                 return
 
         if want_series:
-            c, u, un, s, quit_, apply_all = self._scan_series(base, dry_run, apply_all)
+            c, u, un, s, d, quit_, apply_all = self._scan_series(
+                base, dry_run, apply_all, prune
+            )
             totals["created"] += c
             totals["updated"] += u
             totals["unchanged"] += un
             totals["skipped"] += s
+            totals["deleted"] += d
 
-        self._print_summary(dry_run, totals)
+        self._print_summary(dry_run, totals, prune)
 
-    def _print_summary(self, dry_run: bool, totals: dict[str, int]) -> None:
+    def _print_summary(
+        self, dry_run: bool, totals: dict[str, int], prune: bool
+    ) -> None:
         c_verb = "Would create" if dry_run else "Created"
         u_verb = "would update" if dry_run else "updated"
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"\nDone. {c_verb} {totals['created']}, {u_verb} {totals['updated']}, "
-                f"unchanged {totals['unchanged']}, skipped {totals['skipped']}."
-            )
-        )
+        parts = [
+            f"{c_verb} {totals['created']}",
+            f"{u_verb} {totals['updated']}",
+            f"unchanged {totals['unchanged']}",
+            f"skipped {totals['skipped']}",
+        ]
+        if prune:
+            d_verb = "would delete" if dry_run else "deleted"
+            parts.append(f"{d_verb} {totals['deleted']}")
+        self.stdout.write(self.style.SUCCESS(f"\nDone. {', '.join(parts)}."))
 
     def _scan_movies(
         self,
@@ -344,51 +488,89 @@ class Command(BaseCommand):
         dry_run: bool,
         apply_all: bool,
         with_length: bool,
-    ) -> tuple[int, int, int, int, bool, bool]:
+        prune: bool,
+    ) -> tuple[int, int, int, int, int, bool, bool]:
         root = base / library
         self.stdout.write(
             self.style.NOTICE(f"\n=== {library} ({root}) type={movie_type} ===")
         )
         if not root.is_dir():
             self.stdout.write(self.style.ERROR(f"Missing library root: {root}"))
-            return 0, 0, 0, 0, False, apply_all
+            return 0, 0, 0, 0, 0, False, apply_all
 
         subdirs = sorted(
             [p for p in root.iterdir() if p.is_dir() and not p.name.startswith(".")],
             key=lambda p: p.name.lower(),
         )
-        created_n = updated_n = unchanged_n = skipped_n = 0
+        seen_folders = {f"{library}/{p.name}" for p in subdirs}
+        created_n = updated_n = unchanged_n = skipped_n = deleted_n = 0
 
         for folder in subdirs:
-            files_paths = list_video_files(folder)
-            file_path: Path | None = None
-            if len(files_paths) == 1:
-                file_path = files_paths[0]
-                status = "OK"
-            elif len(files_paths) == 0:
-                status = "No movie file found"
-            else:
-                status = "More than 1 video file found:"
-                for f in files_paths:
-                    status += f' "{f.name}"'
-
+            file_path, status = resolve_movie_video(folder)
             title, year, director = extract_movie_info_from_dir_name(folder.name)
-            if not file_path:
-                self.stdout.write(self.style.WARNING(f'  Passing "{title}": {status}'))
-                skipped_n += 1
-                continue
             if not title:
                 self.stdout.write(
-                    self.style.WARNING(f'  Passing "{file_path}": missing title')
+                    self.style.WARNING(
+                        f"  Passing folder {folder.name!r}: missing title"
+                    )
                 )
                 skipped_n += 1
+                continue
+
+            folder_rel = f"{library}/{folder.name}"
+
+            # No unique video: Colab-style skip for creates; may still refresh
+            # scan_status on an existing row matched by folder.
+            if file_path is None:
+                self.stdout.write(self.style.WARNING(f'  Passing "{title}": {status}'))
+                existing = Movie.objects.filter(
+                    Q(path=folder_rel) | Q(path__startswith=f"{folder_rel}/")
+                )
+                hits = list(existing)
+                if len(hits) == 1:
+                    obj = hits[0]
+                    if obj.scan_status != status:
+                        action = "Would update" if dry_run else "Update"
+                        self.stdout.write(
+                            f'  {action} Movie "{obj.title}" (id={obj.id}):'
+                        )
+                        self.stdout.write(
+                            f"    scan_status: {obj.scan_status!r} -> {status!r}"
+                        )
+                        if dry_run:
+                            updated_n += 1
+                        else:
+                            do, apply_all, quit_ = prompt_apply(apply_all)
+                            if quit_:
+                                self.stdout.write(
+                                    self.style.WARNING("\nStopped by user.")
+                                )
+                                return (
+                                    created_n,
+                                    updated_n,
+                                    unchanged_n,
+                                    skipped_n,
+                                    deleted_n,
+                                    True,
+                                    apply_all,
+                                )
+                            if do:
+                                obj.scan_status = status
+                                obj.save(update_fields=["scan_status"])
+                                updated_n += 1
+                            else:
+                                skipped_n += 1
+                    else:
+                        unchanged_n += 1
+                else:
+                    skipped_n += 1
                 continue
 
             length = frames = None
             if with_length:
                 length, frames = video_length_and_frames(file_path)
-
             rel_path = to_relative_path(file_path, base)
+
             new_data = {
                 "title": title,
                 "type": movie_type,
@@ -400,16 +582,15 @@ class Command(BaseCommand):
                 "frames": frames,
             }
 
-            existing = Movie.objects.filter(path=rel_path).first()
-            if existing is None:
-                folder_rel = f"{library}/{folder.name}"
+            existing_obj = Movie.objects.filter(path=rel_path).first()
+            if existing_obj is None:
                 folder_hits = list(
                     Movie.objects.filter(
                         Q(path=folder_rel) | Q(path__startswith=f"{folder_rel}/")
                     )
                 )
                 if len(folder_hits) == 1:
-                    existing = folder_hits[0]
+                    existing_obj = folder_hits[0]
                 elif len(folder_hits) > 1:
                     self.stdout.write(
                         self.style.WARNING(
@@ -420,7 +601,7 @@ class Command(BaseCommand):
                     skipped_n += 1
                     continue
 
-            if existing is None:
+            if existing_obj is None:
                 action = "Would create" if dry_run else "Create"
                 self.stdout.write(
                     f'  {action} Movie "{title}" path={rel_path!r} '
@@ -432,7 +613,15 @@ class Command(BaseCommand):
                 do, apply_all, quit_ = prompt_apply(apply_all)
                 if quit_:
                     self.stdout.write(self.style.WARNING("\nStopped by user."))
-                    return created_n, updated_n, unchanged_n, skipped_n, True, apply_all
+                    return (
+                        created_n,
+                        updated_n,
+                        unchanged_n,
+                        skipped_n,
+                        deleted_n,
+                        True,
+                        apply_all,
+                    )
                 if not do:
                     skipped_n += 1
                     continue
@@ -440,14 +629,14 @@ class Command(BaseCommand):
                 created_n += 1
                 continue
 
-            changes = show_movie_diff(existing, new_data)
+            changes = show_movie_diff(existing_obj, new_data)
             if not changes:
                 unchanged_n += 1
                 continue
 
             action = "Would update" if dry_run else "Update"
             self.stdout.write(
-                f'  {action} Movie "{existing.title}" (id={existing.id}):'
+                f'  {action} Movie "{existing_obj.title}" (id={existing_obj.id}):'
             )
             for key, v in changes.items():
                 self.stdout.write(f"    {key}: {v['before']!r} -> {v['after']!r}")
@@ -457,42 +646,128 @@ class Command(BaseCommand):
             do, apply_all, quit_ = prompt_apply(apply_all)
             if quit_:
                 self.stdout.write(self.style.WARNING("\nStopped by user."))
-                return created_n, updated_n, unchanged_n, skipped_n, True, apply_all
+                return (
+                    created_n,
+                    updated_n,
+                    unchanged_n,
+                    skipped_n,
+                    deleted_n,
+                    True,
+                    apply_all,
+                )
             if not do:
                 skipped_n += 1
                 continue
             for key, value in new_data.items():
                 if value is not None:
-                    setattr(existing, key, value)
-            existing.path = rel_path
-            existing.save(
-                update_fields=[
-                    f
-                    for f in MOVIE_SCAN_FIELDS
-                    if new_data[f] is not None or f == "path"
-                ]
-            )
+                    setattr(existing_obj, key, value)
+            existing_obj.path = rel_path
+            update_fields = [
+                f for f in MOVIE_SCAN_FIELDS if new_data[f] is not None or f == "path"
+            ]
+            # Apply explicit clears (e.g. actor credit wrongly stored as director)
+            for key, v in changes.items():
+                if v["after"] is None:
+                    setattr(existing_obj, key, None)
+                    if key not in update_fields:
+                        update_fields.append(key)
+            existing_obj.save(update_fields=update_fields)
             updated_n += 1
 
-        return created_n, updated_n, unchanged_n, skipped_n, False, apply_all
+        if prune:
+            d, s, quit_, apply_all = self._prune_orphan_movies(
+                library, seen_folders, dry_run, apply_all
+            )
+            deleted_n += d
+            skipped_n += s
+            if quit_:
+                return (
+                    created_n,
+                    updated_n,
+                    unchanged_n,
+                    skipped_n,
+                    deleted_n,
+                    True,
+                    apply_all,
+                )
+
+        return created_n, updated_n, unchanged_n, skipped_n, deleted_n, False, apply_all
+
+    def _prune_orphan_movies(
+        self,
+        library: str,
+        seen_folders: set[str],
+        dry_run: bool,
+        apply_all: bool,
+    ) -> tuple[int, int, bool, bool]:
+        """Propose deleting Movie rows whose top-level library folder is gone."""
+        prefix = f"{library}/"
+        candidates = (
+            Movie.objects.filter(path__startswith=prefix)
+            .prefetch_related("color_palettes")
+            .order_by("title", "id")
+        )
+        orphans = [
+            obj
+            for obj in candidates
+            if (key := library_folder_key(obj.path or "", library)) is not None
+            and key not in seen_folders
+        ]
+        if not orphans:
+            self.stdout.write(
+                self.style.NOTICE(f"  No orphan Movie rows under {library}/")
+            )
+            return 0, 0, False, apply_all
+
+        self.stdout.write(
+            self.style.NOTICE(
+                f"\n--- Prune orphan Movies under {library}/ ({len(orphans)}) ---"
+            )
+        )
+        deleted_n = skipped_n = 0
+        for obj in orphans:
+            palette_n = obj.color_palettes.count()
+            palette_note = (
+                f", cascades {palette_n} color palette(s)" if palette_n else ""
+            )
+            action = "Would delete" if dry_run else "Delete"
+            self.stdout.write(
+                f'  {action} Movie "{obj.title}" (id={obj.id}) '
+                f"path={obj.path!r}{palette_note}"
+            )
+            if dry_run:
+                deleted_n += 1
+                continue
+            do, apply_all, quit_ = prompt_apply(apply_all)
+            if quit_:
+                self.stdout.write(self.style.WARNING("\nStopped by user."))
+                return deleted_n, skipped_n, True, apply_all
+            if not do:
+                skipped_n += 1
+                continue
+            obj.delete()
+            deleted_n += 1
+        return deleted_n, skipped_n, False, apply_all
 
     def _scan_series(
         self,
         base: Path,
         dry_run: bool,
         apply_all: bool,
-    ) -> tuple[int, int, int, int, bool, bool]:
+        prune: bool,
+    ) -> tuple[int, int, int, int, int, bool, bool]:
         root = base / LIBRARY_SERIES
         self.stdout.write(self.style.NOTICE(f"\n=== {LIBRARY_SERIES} ({root}) ==="))
         if not root.is_dir():
             self.stdout.write(self.style.ERROR(f"Missing library root: {root}"))
-            return 0, 0, 0, 0, False, apply_all
+            return 0, 0, 0, 0, 0, False, apply_all
 
         show_dirs = sorted(
             [p for p in root.iterdir() if p.is_dir() and not p.name.startswith(".")],
             key=lambda p: p.name.lower(),
         )
-        created_n = updated_n = unchanged_n = skipped_n = 0
+        seen_folders = {f"{LIBRARY_SERIES}/{p.name}" for p in show_dirs}
+        created_n = updated_n = unchanged_n = skipped_n = deleted_n = 0
 
         for show_path in show_dirs:
             seasons, episodes, year, scan_status = analyze_show_folder(show_path)
@@ -519,7 +794,15 @@ class Command(BaseCommand):
                 do, apply_all, quit_ = prompt_apply(apply_all)
                 if quit_:
                     self.stdout.write(self.style.WARNING("\nStopped by user."))
-                    return created_n, updated_n, unchanged_n, skipped_n, True, apply_all
+                    return (
+                        created_n,
+                        updated_n,
+                        unchanged_n,
+                        skipped_n,
+                        deleted_n,
+                        True,
+                        apply_all,
+                    )
                 if not do:
                     skipped_n += 1
                     continue
@@ -546,7 +829,15 @@ class Command(BaseCommand):
             do, apply_all, quit_ = prompt_apply(apply_all)
             if quit_:
                 self.stdout.write(self.style.WARNING("\nStopped by user."))
-                return created_n, updated_n, unchanged_n, skipped_n, True, apply_all
+                return (
+                    created_n,
+                    updated_n,
+                    unchanged_n,
+                    skipped_n,
+                    deleted_n,
+                    True,
+                    apply_all,
+                )
             if not do:
                 skipped_n += 1
                 continue
@@ -555,4 +846,70 @@ class Command(BaseCommand):
             obj.save(update_fields=list(SERIES_SCAN_FIELDS))
             updated_n += 1
 
-        return created_n, updated_n, unchanged_n, skipped_n, False, apply_all
+        if prune:
+            d, s, quit_, apply_all = self._prune_orphan_series(
+                seen_folders, dry_run, apply_all
+            )
+            deleted_n += d
+            skipped_n += s
+            if quit_:
+                return (
+                    created_n,
+                    updated_n,
+                    unchanged_n,
+                    skipped_n,
+                    deleted_n,
+                    True,
+                    apply_all,
+                )
+
+        return created_n, updated_n, unchanged_n, skipped_n, deleted_n, False, apply_all
+
+    def _prune_orphan_series(
+        self,
+        seen_folders: set[str],
+        dry_run: bool,
+        apply_all: bool,
+    ) -> tuple[int, int, bool, bool]:
+        """Propose deleting Series rows whose show folder is gone."""
+        prefix = f"{LIBRARY_SERIES}/"
+        candidates = Series.objects.filter(path__startswith=prefix).order_by(
+            "title", "id"
+        )
+        orphans = [
+            obj
+            for obj in candidates
+            if (key := library_folder_key(obj.path or "", LIBRARY_SERIES)) is not None
+            and key not in seen_folders
+        ]
+        if not orphans:
+            self.stdout.write(
+                self.style.NOTICE(f"  No orphan Series rows under {LIBRARY_SERIES}/")
+            )
+            return 0, 0, False, apply_all
+
+        self.stdout.write(
+            self.style.NOTICE(
+                f"\n--- Prune orphan Series under {LIBRARY_SERIES}/ "
+                f"({len(orphans)}) ---"
+            )
+        )
+        deleted_n = skipped_n = 0
+        for obj in orphans:
+            action = "Would delete" if dry_run else "Delete"
+            self.stdout.write(
+                f'  {action} Series "{obj.title}" (id={obj.id}) path={obj.path!r}'
+            )
+            if dry_run:
+                deleted_n += 1
+                continue
+            do, apply_all, quit_ = prompt_apply(apply_all)
+            if quit_:
+                self.stdout.write(self.style.WARNING("\nStopped by user."))
+                return deleted_n, skipped_n, True, apply_all
+            if not do:
+                skipped_n += 1
+                continue
+            obj.delete()
+            deleted_n += 1
+        return deleted_n, skipped_n, False, apply_all
