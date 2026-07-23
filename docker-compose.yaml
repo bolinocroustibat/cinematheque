@@ -52,6 +52,9 @@ services:
       # Poster resolution (TMDB + optional OMDb fallback)
       - TMDB_API_KEY=${TMDB_API_KEY}
       - OMDB_API_KEY=${OMDB_API_KEY}
+
+      # Write API auth (POST create endpoints)
+      - API_WRITE_KEY=${API_WRITE_KEY}
     healthcheck:
       # TCP check: avoids false failures when ALLOWED_HOSTS excludes localhost (HTTP would return 400).
       test:

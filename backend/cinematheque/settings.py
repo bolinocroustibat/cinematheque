@@ -161,3 +161,6 @@ VERSION: str = pyproject["project"]["version"]
 # External APIs (server-side only; used for poster resolution and future proxies)
 TMDB_API_KEY: str = os.getenv("TMDB_API_KEY", "")
 OMDB_API_KEY: str = os.getenv("OMDB_API_KEY", "")
+
+# Shared secret for authenticated write endpoints (X-API-Key). Empty = all writes rejected.
+API_WRITE_KEY: str = os.getenv("API_WRITE_KEY", "")
