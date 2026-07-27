@@ -28,6 +28,9 @@ class MovieSchema(Schema):
     acquired_at: str | None = None
     consumed_at: str | None = None
     country: str | None = None
+    length: int | None = None
+    frames: int | None = None
+    created_at: str
 
 
 class MoviesResponse(Schema):
@@ -72,6 +75,9 @@ def _serialize_movie(movie: Movie, *, include_palettes: bool = True) -> dict:
         "acquired_at": movie.acquired_at.isoformat() if movie.acquired_at else None,
         "consumed_at": movie.consumed_at.isoformat() if movie.consumed_at else None,
         "country": movie.country,
+        "length": movie.length,
+        "frames": movie.frames,
+        "created_at": movie.created_at.isoformat(),
     }
 
 
