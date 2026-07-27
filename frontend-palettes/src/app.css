@@ -65,9 +65,8 @@
 	@font-face {
 		font-family: "Windsor";
 		src:
-			url("/fonts/windsor-light.woff") format("woff"),
-			/* Fallback for older browsers */ url("/fonts/windsor-light.otf")
-			format("opentype");
+			url("$lib/assets/fonts/windsor-light.woff") format("woff"),
+			url("$lib/assets/fonts/windsor-light.otf") format("opentype");
 		/* Final fallback */
 		font-weight: 300;
 		font-style: normal;
