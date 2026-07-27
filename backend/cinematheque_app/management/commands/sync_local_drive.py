@@ -2,7 +2,9 @@
 Sync local Drive MOVIES / DOCUMENTARIES / SERIES under DRIVE_BASE_PATH into
 Movie / Series rows (library-relative paths).
 
-Movies/docs follow the legacy Colab notebook (one video file per folder).
+Movies/docs: title from folder name; director and year from IMDB (local Cinemagoer
+database when ``CINEMAGOER_DB_URI`` is set, otherwise OMDb when ``OMDB_API_KEY``
+is configured).
 OpenCV length/frames is opt-in via ``--with-length`` (slow on large libraries).
 Series use season folders or flat episode filenames.
 
@@ -20,8 +22,12 @@ import os
 import re
 from pathlib import Path
 
+import imdb
+import niquests
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import Q
+from imdb import IMDb
 
 from cinematheque_app.models import Movie, Series
 
@@ -47,13 +53,9 @@ MOVIE_SCAN_FIELDS = (
 )
 SERIES_SCAN_FIELDS = ("title", "path", "seasons", "episodes", "year", "scan_status")
 
-# Rightmost "(YYYY" or "(YYYY, …)" — second group is treated as director unless
-# it is an actor credit (avec / with …).
-YEAR_GROUP = re.compile(r"\(((?:19|20)\d{2})(?:\s*,\s*([^)]+))?\)")
-DIRECTOR_ONLY = re.compile(
-    r"^(.*?) \(([A-ZÀ-ÖØ-Þ][\w'’-]+(?:[- ][A-ZÀ-ÖØ-Þ][\w'’-]+)+)\)$"
-)
-ACTOR_CREDIT_PREFIXES = ("avec ", "with ")
+REFETCH_INFO = False
+OMDB_BASE_URL = "https://www.omdbapi.com"
+IMDB_REQUEST_TIMEOUT = 10.0
 
 YEAR_IN_PARENS = re.compile(r"\((19|20)\d{2}\)")
 SEASON_NUM = re.compile(r"season\s*(\d+)", re.IGNORECASE)
@@ -93,64 +95,123 @@ def prompt_apply(apply_all: bool) -> tuple[bool, bool, bool]:
 # --- Movies / documentaries ----------------------------------------------
 
 
-def _clean_director(raw: str | None) -> str | None:
-    if not raw:
-        return None
-    director = raw.strip()
-    if not director:
-        return None
-    lower = director.lower()
-    # Starring credits in folder names, not directors
-    if lower.startswith(ACTOR_CREDIT_PREFIXES):
-        return None
-    if lower.startswith(("doc ", "aka ", "about ")):
-        return None
-    if len(director) > 50 or len(director.split()) > 5:
-        return None
-    if any(
-        token in lower
-        for token in ("directed by", "television", "comedy", "film ", " movie")
-    ):
-        return None
-    if "," in director and not re.search(r"[A-ZÀ-ÖØ-Þ]", director.split(",", 1)[0]):
-        return None
-    return director or None
+_ia: IMDb | None = None
 
 
-def extract_movie_info_from_dir_name(name: str) -> tuple[str, str | None, str | None]:
-    """
-    Extract title, year, director from a folder name.
+def _imdb_client() -> IMDb | None:
+    """Cinemagoer S3 client when ``CINEMAGOER_DB_URI`` points at an imported IMDb DB."""
+    global _ia
+    if _ia is not None:
+        return _ia
+    uri = os.getenv("CINEMAGOER_DB_URI", "").strip()
+    if not uri:
+        return None
+    _ia = IMDb(accessSystem="s3", uri=uri)
+    return _ia
 
-    Prefers the rightmost ``(YYYY)`` / ``(YYYY, …)`` group. The second group is
-    the director unless it is an actor credit (``avec …`` / ``with …``). Also
-    handles ``(notes, YYYY)``. Falls back to ``Title (Director)`` then stripping
-    a trailing parenthesis.
-    """
+
+def title_from_dir_name(name: str) -> str:
+    """Folder name without trailing parenthetical metadata (year, director, notes)."""
     name = name.strip()
-    matches = list(YEAR_GROUP.finditer(name))
-    if matches:
-        m = matches[-1]
-        title = name[: m.start()].strip() or name
-        year = m.group(1)
-        director = _clean_director(m.group(2))
-        return title, year, director
+    title = re.sub(r" \([^)]+\)$", "", name).strip()
+    return title or name
 
-    # e.g. "Beer fest (teen movie, 2006)"
-    notes_year = re.search(
-        r"^(.*?)\s+\(([^)]*?),\s*((?:19|20)\d{2})\)\s*$",
-        name,
-    )
-    if notes_year:
-        title, _notes, year = notes_year.groups()
-        return title.strip(), year, None
 
-    match = DIRECTOR_ONLY.match(name)
-    if match:
-        title, director = match.groups()
-        return title.strip(), None, _clean_director(director)
+def get_imdb_data(movie_title: str) -> dict | None:
+    """
+    Fetch director and year from IMDB for a movie title.
 
-    fallback = re.sub(r" \([^)]+\)$", "", name).strip()
-    return fallback or name, None, None
+    Returns a dict with ``director`` and/or ``year`` when found, else None.
+    """
+    ia = _imdb_client()
+    if ia is not None:
+        return _get_imdb_data_cinemagoer(movie_title, ia)
+    return _get_imdb_data_omdb(movie_title)
+
+
+def _get_imdb_data_cinemagoer(movie_title: str, ia: IMDb) -> dict | None:
+    try:
+        movies = ia.search_movie(movie_title, results=1)
+        if not movies:
+            return None
+        movie_id = movies[0].movieID
+        movie = ia.get_movie(movie_id)
+        imdb_title = movie.get("title")
+        if not imdb_title or imdb_title.lower() != movie_title.lower():
+            return None
+        director = None
+        year = None
+        if movie.get("director"):
+            director = movie["director"][0]["name"]
+        year = movie.get("year")
+        if director or year:
+            return {"director": director, "year": year}
+        return None
+    except imdb.exceptions.IMDbError as e:
+        print(f"Error fetching data for {movie_title}: {e}")
+        return None
+
+
+def _get_imdb_data_omdb(movie_title: str) -> dict | None:
+    omdb_key = (settings.OMDB_API_KEY or "").strip()
+    if not omdb_key:
+        return None
+    try:
+        with niquests.Session(timeout=IMDB_REQUEST_TIMEOUT) as session:
+            search = session.get(
+                OMDB_BASE_URL,
+                params={"apikey": omdb_key, "s": movie_title, "type": "movie"},
+            )
+            search.raise_for_status()
+            payload = search.json()
+            if payload.get("Response") != "True":
+                return None
+            results = payload.get("Search") or []
+            if not results:
+                return None
+            hit = results[0]
+            if hit.get("Title", "").lower() != movie_title.lower():
+                return None
+            detail = session.get(
+                OMDB_BASE_URL,
+                params={"apikey": omdb_key, "i": hit["imdbID"]},
+            )
+            detail.raise_for_status()
+            data = detail.json()
+            if data.get("Response") != "True":
+                return None
+            director = data.get("Director")
+            if not director or director == "N/A":
+                director = None
+            year_raw = data.get("Year")
+            year = None
+            if year_raw and year_raw != "N/A":
+                year = re.split(r"[–-]", str(year_raw), maxsplit=1)[0]
+            if director or year:
+                return {"director": director, "year": year}
+            return None
+    except (niquests.RequestException, KeyError, TypeError, ValueError) as e:
+        print(f"Error fetching data for {movie_title}: {e}")
+        return None
+
+
+def movie_director_and_year(
+    title: str,
+    existing: Movie | None,
+    *,
+    refetch: bool = REFETCH_INFO,
+) -> tuple[str | None, str | None]:
+    """Resolve director/year via IMDB; reuse existing DB values when allowed."""
+    if existing and not refetch and existing.director and existing.year:
+        return existing.director, existing.year
+    data = get_imdb_data(title)
+    if not data:
+        if existing:
+            return existing.director, existing.year
+        return None, None
+    director = data.get("director")
+    year = str(data["year"]) if data.get("year") is not None else None
+    return director, year
 
 
 def list_video_files(folder: Path) -> list[Path]:
@@ -251,14 +312,6 @@ def show_movie_diff(existing: Movie, new_data: dict) -> dict[str, dict]:
         old_val = getattr(existing, key)
         if old_val != new_val:
             changes[key] = {"before": old_val, "after": new_val}
-    # Drop starring credits wrongly stored as director
-    old_director = existing.director
-    if (
-        old_director
-        and "director" not in changes
-        and old_director.strip().lower().startswith(ACTOR_CREDIT_PREFIXES)
-    ):
-        changes["director"] = {"before": old_director, "after": None}
     return changes
 
 
@@ -388,6 +441,11 @@ class Command(BaseCommand):
             ),
         )
         parser.add_argument(
+            "--refetch-imdb",
+            action="store_true",
+            help="Re-fetch director and year from IMDB even when already set",
+        )
+        parser.add_argument(
             "--with-length",
             action="store_true",
             help=(
@@ -397,6 +455,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        refetch_imdb: bool = options["refetch_imdb"]
         dry_run: bool = options["dry_run"]
         apply_all: bool = options["yes"]
         with_length: bool = options["with_length"]
@@ -441,7 +500,14 @@ class Command(BaseCommand):
 
         for library, movie_type in libraries:
             c, u, un, s, d, quit_, apply_all = self._scan_movies(
-                base, library, movie_type, dry_run, apply_all, with_length, prune
+                base,
+                library,
+                movie_type,
+                dry_run,
+                apply_all,
+                with_length,
+                prune,
+                refetch_imdb,
             )
             totals["created"] += c
             totals["updated"] += u
@@ -489,6 +555,7 @@ class Command(BaseCommand):
         apply_all: bool,
         with_length: bool,
         prune: bool,
+        refetch_imdb: bool,
     ) -> tuple[int, int, int, int, int, bool, bool]:
         root = base / library
         self.stdout.write(
@@ -507,7 +574,7 @@ class Command(BaseCommand):
 
         for folder in subdirs:
             file_path, status = resolve_movie_video(folder)
-            title, year, director = extract_movie_info_from_dir_name(folder.name)
+            title = title_from_dir_name(folder.name)
             if not title:
                 self.stdout.write(
                     self.style.WARNING(
@@ -571,17 +638,6 @@ class Command(BaseCommand):
                 length, frames = video_length_and_frames(file_path)
             rel_path = to_relative_path(file_path, base)
 
-            new_data = {
-                "title": title,
-                "type": movie_type,
-                "scan_status": status,
-                "path": rel_path,
-                "director": director,
-                "year": str(year) if year is not None else None,
-                "length": length,
-                "frames": frames,
-            }
-
             existing_obj = Movie.objects.filter(path=rel_path).first()
             if existing_obj is None:
                 folder_hits = list(
@@ -600,6 +656,21 @@ class Command(BaseCommand):
                     )
                     skipped_n += 1
                     continue
+
+            director, year = movie_director_and_year(
+                title, existing_obj, refetch=refetch_imdb
+            )
+
+            new_data = {
+                "title": title,
+                "type": movie_type,
+                "scan_status": status,
+                "path": rel_path,
+                "director": director,
+                "year": year,
+                "length": length,
+                "frames": frames,
+            }
 
             if existing_obj is None:
                 action = "Would create" if dry_run else "Create"
@@ -665,12 +736,6 @@ class Command(BaseCommand):
             update_fields = [
                 f for f in MOVIE_SCAN_FIELDS if new_data[f] is not None or f == "path"
             ]
-            # Apply explicit clears (e.g. actor credit wrongly stored as director)
-            for key, v in changes.items():
-                if v["after"] is None:
-                    setattr(existing_obj, key, None)
-                    if key not in update_fields:
-                        update_fields.append(key)
             existing_obj.save(update_fields=update_fields)
             updated_n += 1
 
