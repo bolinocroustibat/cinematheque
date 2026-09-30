@@ -10,6 +10,11 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+    # Disable core dumps (crash memory snapshots) so a crash loop cannot fill the disk
+    ulimits:
+      core:
+        soft: 0
+        hard: 0
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\""]
       interval: 5s
@@ -29,6 +34,11 @@ services:
       - static_volume:/app/staticfiles
     ports:
       - "${API_PORT:-8000}:8000"
+    # Disable core dumps (crash memory snapshots) so a crash loop cannot fill the disk
+    ulimits:
+      core:
+        soft: 0
+        hard: 0
     environment:
       # Application settings
       - ENVIRONMENT=${ENVIRONMENT:-unknown}
@@ -81,6 +91,11 @@ services:
     restart: unless-stopped
     ports:
       - "${FRONTEND_PALETTES_PORT:-3001}:3000"
+    # Disable core dumps (crash memory snapshots) so a crash loop cannot fill the disk
+    ulimits:
+      core:
+        soft: 0
+        hard: 0
     environment:
       # Server-side fetches use the Docker network; container listens on 8000 (host uses API_PORT)
       - API_URL=http://backend:8000
