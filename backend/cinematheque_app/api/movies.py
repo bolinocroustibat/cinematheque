@@ -30,6 +30,7 @@ class MovieSchema(Schema):
     country: str | None = None
     length: int | None = None
     frames: int | None = None
+    path: str | None = None
     created_at: str
 
 
@@ -77,6 +78,7 @@ def _serialize_movie(movie: Movie, *, include_palettes: bool = True) -> dict:
         "country": movie.country,
         "length": movie.length,
         "frames": movie.frames,
+        "path": movie.path,
         "created_at": movie.created_at.isoformat(),
     }
 
