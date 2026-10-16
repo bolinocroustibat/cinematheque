@@ -10,7 +10,6 @@ dependencies = [
     "django-cors-headers>=4.9.0",
     "django-shinobi>=1.4.2",
     "google-genai>=2.13.0",
-    "gunicorn>=26.0.0",
     "niquests>=3.20.0",
     "opencv-python-headless>=5.0.0.93",
     "orjson>=3.11.9",
