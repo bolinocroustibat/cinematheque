@@ -15,7 +15,7 @@ RUN uv sync --locked
 
 EXPOSE 8000
 
-# Run migrations, collect static files, and start the server
-CMD uv run python manage.py migrate && \
-    uv run python manage.py collectstatic --noinput && \
-    exec uv run gunicorn cinematheque.asgi:application -w 4 -k uvicorn.workers.UvicornWorker --bind "0.0.0.0:8000"
+# Run migrations, collect static files, and start the server.
+# JSON form is the exec form: no implicit shell. sh -c is still required for &&.
+# exec makes Uvicorn PID 1 so it receives signals.
+CMD ["sh", "-c", "uv run --no-dev manage.py migrate --noinput && uv run --no-dev manage.py collectstatic --noinput && exec uv run --no-dev uvicorn --host 0.0.0.0 --port 8000 --workers 1 cinematheque.asgi:application"]
