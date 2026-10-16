@@ -1,0 +1,25 @@
+[project]
+name = "notebooks"
+version = "0.1.0"
+description = "movies analysis notebooks"
+readme = "README.md"
+authors = [
+    { name = "Adrien Carpentier", email = "me@adriencarpentier.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "matplotlib>=3.11.2",
+    "python-dotenv>=1.2.4",
+]
+
+[project.scripts]
+notebooks = "notebooks:main"
+
+[build-system]
+requires = ["uv_build>=0.13.1,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.4.0",
+]
