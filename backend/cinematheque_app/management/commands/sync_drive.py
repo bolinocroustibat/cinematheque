@@ -1,6 +1,7 @@
 """
-Sync local Drive MOVIES / DOCUMENTARIES / SERIES under DRIVE_BASE_PATH into
-Movie / Series rows (library-relative paths).
+Sync Drive MOVIES / DOCUMENTARIES / SERIES under DRIVE_BASE_PATH into Movie /
+Series rows (library-relative paths). Default database is local Postgres;
+``--remote`` uses ``REMOTE_DATABASE_URL``.
 
 Movies/docs: title from folder name; director and year from IMDB (local Cinemagoer
 database when ``CINEMAGOER_DB_URI`` is set, otherwise OMDb when ``OMDB_API_KEY``
@@ -11,21 +12,24 @@ Series use season folders or flat episode filenames.
 With ``--prune``, propose deleting DB rows whose library folder no longer
 exists on disk (CLI confirm; cascades MovieColorPalette for movies).
 
-    export DRIVE_BASE_PATH=".../My Drive"
-    uv run manage.py sync_local_drive
-    uv run manage.py sync_local_drive --movies --dry-run
-    uv run manage.py sync_local_drive --movies --with-length
-    uv run manage.py sync_local_drive --movies --prune
+    uv run manage.py sync_drive
+    uv run manage.py sync_drive --movies --dry-run
+    uv run manage.py sync_drive --remote --dry-run
+    uv run manage.py sync_drive --remote
+    uv run manage.py sync_drive --movies --with-length
+    uv run manage.py sync_drive --movies --prune
 """
 
 import os
 import re
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 import imdb
 import niquests
 from django.conf import settings
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
+from django.db import connections
 from django.db.models import Q
 from imdb import IMDb
 
@@ -73,6 +77,32 @@ THREE_DIGIT_PREFIX_PATTERN = re.compile(r"^(\d{3})\s+")
 
 def get_drive_base_path() -> str:
     return os.getenv("DRIVE_BASE_PATH", "").rstrip("/")
+
+
+def connect_remote(url: str) -> dict:
+    """Point Django's default connection at a postgres:// URL."""
+    parsed = urlparse(url)
+    name = unquote(parsed.path.lstrip("/"))
+    host = parsed.hostname or ""
+    if parsed.scheme not in {"postgres", "postgresql"} or not host or not name:
+        raise CommandError(
+            "REMOTE_DATABASE_URL must be postgresql://user:pass@host:port/dbname"
+        )
+    config = {
+        **settings.DATABASES["default"],
+        "NAME": name,
+        "USER": unquote(parsed.username or ""),
+        "PASSWORD": unquote(parsed.password or ""),
+        "HOST": host,
+        "PORT": str(parsed.port or 5432),
+    }
+    settings.DATABASES["default"] = config
+    connections.close_all()
+    try:
+        del connections["default"]
+    except AttributeError:
+        pass
+    return config
 
 
 def drive_base() -> Path:
@@ -423,7 +453,8 @@ class Command(BaseCommand):
     help = (
         "Sync DRIVE_BASE_PATH/{MOVIES,DOCUMENTARIES,SERIES} into Movie and "
         "Series rows. Omit flags to sync all three. Use --prune to propose "
-        "deleting DB rows whose library folder no longer exists on disk."
+        "deleting DB rows whose library folder no longer exists on disk. "
+        "Use --remote to read/write REMOTE_DATABASE_URL."
     )
 
     def add_arguments(self, parser):
@@ -432,6 +463,11 @@ class Command(BaseCommand):
         parser.add_argument("--series", action="store_true")
         parser.add_argument("--dry-run", action="store_true")
         parser.add_argument("--yes", action="store_true")
+        parser.add_argument(
+            "--remote",
+            action="store_true",
+            help="Use REMOTE_DATABASE_URL instead of the local database",
+        )
         parser.add_argument(
             "--prune",
             action="store_true",
@@ -460,9 +496,25 @@ class Command(BaseCommand):
         apply_all: bool = options["yes"]
         with_length: bool = options["with_length"]
         prune: bool = options["prune"]
+        remote: bool = options["remote"]
 
         if dry_run and options["yes"]:
             self.stdout.write(self.style.WARNING("--yes is ignored during --dry-run"))
+
+        if remote:
+            url = os.getenv("REMOTE_DATABASE_URL", "").strip()
+            if not url:
+                raise CommandError("REMOTE_DATABASE_URL is empty; set it in .env")
+            db = connect_remote(url)
+            label = "remote"
+        else:
+            db = settings.DATABASES["default"]
+            label = "local"
+        self.stdout.write(
+            self.style.NOTICE(
+                f"Database: {label} ({db.get('HOST')}:{db.get('PORT')}/{db.get('NAME')})"
+            )
+        )
 
         if not get_drive_base_path():
             self.stdout.write(

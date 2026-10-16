@@ -36,5 +36,5 @@ If most movies have no `length`, probe video files on the server:
 
 ```bash
 cd backend
-uv run --env-file ../.env manage.py sync_local_drive --movies --with-length
+uv run manage.py sync_drive --movies --with-length
 ```
