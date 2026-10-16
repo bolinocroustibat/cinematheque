@@ -1,11 +1,11 @@
 from ninja import Router
 
 from cinematheque_app.api.books import router as books_router
+from cinematheque_app.api.movies import router as movies_router
+from cinematheque_app.api.movies_palettes import router as movies_palettes_router
 from cinematheque_app.api.movies_recommendations import (
     router as movies_recommendations_router,
 )
-from cinematheque_app.api.movies import router as movies_router
-from cinematheque_app.api.movies_palettes import router as movies_palettes_router
 from cinematheque_app.api.series import router as series_router
 
 router = Router()

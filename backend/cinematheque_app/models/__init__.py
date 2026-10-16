@@ -5,9 +5,9 @@ from .palette import MovieColorPalette
 from .series import Series
 
 __all__ = [
+    "Book",
     "MediaItem",
     "Movie",
-    "Series",
-    "Book",
     "MovieColorPalette",
+    "Series",
 ]

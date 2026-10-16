@@ -18,9 +18,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from ninja import NinjaAPI
+
 from cinematheque.helpers import ORJSONRenderer
 from cinematheque.settings import APP_NAME, DESCRIPTION, VERSION
-
 from cinematheque_app.api import router
 
 api = NinjaAPI(

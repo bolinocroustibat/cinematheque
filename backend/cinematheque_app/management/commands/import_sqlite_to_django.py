@@ -7,7 +7,7 @@ Run from the backend directory:
 """
 
 import sqlite3
-from datetime import datetime, timezone as dt_timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from django.core.management.base import BaseCommand
@@ -49,7 +49,7 @@ class Command(BaseCommand):
         )
         rows = cursor.fetchall()
         old_id_to_movie = {}
-        created_at_default = datetime.now(dt_timezone.utc)
+        created_at_default = datetime.now(UTC)
 
         for row in rows:
             old_id = row["id"]
@@ -111,7 +111,7 @@ class Command(BaseCommand):
 
             calc_date = self.parse_datetime_utc(
                 row["calculation_date"]
-            ) or datetime.now(dt_timezone.utc)
+            ) or datetime.now(UTC)
             # SQLite may store booleans as 0/1 or "0"/"1"; bool("0") is True in Python
             active = self._sqlite_bool(row["active"], default=True)
             is_bw = self._sqlite_bool(row["is_black_and_white"], default=False)
@@ -179,9 +179,9 @@ class Command(BaseCommand):
         try:
             dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
             if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=dt_timezone.utc)
+                dt = dt.replace(tzinfo=UTC)
             else:
-                dt = dt.astimezone(dt_timezone.utc)
+                dt = dt.astimezone(UTC)
             return dt
         except (ValueError, TypeError):
             return None
