@@ -1,73 +1,42 @@
 # Movie Color Palettes
 
-A web application that displays color palettes extracted from movies. 
+A web application that displays color palettes extracted from movies.
 Goes hand in hand with the [movies-palettes](https://github.com/adriencarpentier/movies-palettes-backend) backend script to generate the data.
 
-## Dependencies
+## Stack
 
 - [Bun](https://bun.sh) 1.0.x or higher
-- A [SQLite](https://www.sqlite.org/download.html) database
 - **Language**: TypeScript
-- **Framework**: SvelteKit 2.x with Svelte 5
-- **Styling**: TailwindCSS with custom configuration
+- **Framework**: SvelteKit 2.x with Svelte 5, served by [svelte-adapter-bun](https://github.com/gornostay25/svelte-adapter-bun)
+- **Styling**: TailwindCSS 4
 - **Build Tool**: Vite
-- **Deployment**: GitHub Actions with automatic versioning
+- **Deployment**: Docker image built by GitHub Actions with automatic versioning
 - **Code Linting and Formatting**: [Biome](https://biomejs.dev)
 
-## Database schema
+## Architecture
 
-```sql
-CREATE TABLE "movies" (
-	"id" INTEGER PRIMARY KEY AUTOINCREMENT,
-	"title" VARCHAR NOT NULL,
-	"type" VARCHAR,
-	"status" VARCHAR,
-	"path" VARCHAR UNIQUE,
-	"director" VARCHAR,
-	"year" VARCHAR,
-	"length" INT,
-	"frames" INT,
-	"added" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+The app has no database of its own: movie and palette data come from the Cinematheque Django backend (`../backend`).
 
-CREATE TABLE "palettes" (
-	"id" varchar NOT NULL,
-	"movie_id" int NOT NULL,
-	"active" BOOLEAN DEFAULT TRUE,
-	"calculation_date" DATETIME DEFAULT CURRENT_TIMESTAMP,
-	"calculation_duration_seconds" REAL,
-	"is_black_and_white" BOOLEAN DEFAULT FALSE,
-	"colors" text NOT NULL,
-	"clusters_nb" int NOT NULL,
-	"frame_skip" int,
-	"resize_width" int,
-	"resize_height" int,
-	"batch_size" int,
-	"clustering_method" varchar,
-	"saturation_factor" varchar,
-	"saturation_threshold" INT,
-	"runtime" varchar,
-	PRIMARY KEY (id)
-);
-```
+The app is server-side rendered under the `/palettes` base path. On each request, `src/routes/+page.server.ts`:
 
-## API
+1. fetches `GET ${API_URL}/api/movies` from the Bun server (the browser never calls the backend directly),
+2. filters out documentaries,
+3. sorts each palette's colors by proximity,
+4. passes the result to `+page.svelte` for SSR and hydration.
 
-The app exposes a JSON API on the same origin as the application.
+## Configuration
 
-- **Local**: `http://localhost:3000/api/...`
-- **Production**: `https://<your-domain>/api/...`
+Environment variables are read at runtime (`$env/dynamic/private`) from the repo-root `.env`:
 
-### Endpoints
-
-| Method | URL                         | Description                                                                                |
-| ------ | --------------------------- | ------------------------------------------------------------------------------------------ |
-| `GET`  | `/api/movies`               | Returns all movies with their latest palette (colors, calculation date, etc.).             |
-| `GET`  | `/api/palettes/[movieName]` | Returns a movie and all its palettes. `movieName` is the title slug (e.g. `pulp-fiction`). |
-
-Responses are JSON and CORS headers are set for cross-origin requests.
+| Variable      | Description                                                                                         |
+| ------------- | --------------------------------------------------------------------------------------------------- |
+| `API_URL`     | Backend base URL. Defaults to `http://localhost:${API_PORT}`. Docker Compose sets `http://backend:8000`. |
+| `API_PORT`    | Backend port used for the default `API_URL` (default `8000`).                                       |
+| `ENVIRONMENT` | Deployment environment name.                                                                        |
 
 ## Run locally
+
+Start the backend first (see the repo-root README), then:
 
 ```bash
 bun install
@@ -77,32 +46,40 @@ bun install
 bun run dev
 ```
 
+The app is available at `http://localhost:5173/palettes`.
+
 ## Build
 
 ```bash
 bun run build
 ```
 
-Preview the prod build with:
+This produces a standalone Bun server in `build/`. Run it with:
+
+```bash
+bun build/index.js
+```
+
+or preview the prod build with Vite:
 
 ```bash
 bun run preview
 ```
 
+## Docker
+
+The `Dockerfile` builds the app and runs `bun index.js` on port 3000. In `docker-compose.yaml`, the `frontend-palettes` service is published on `FRONTEND_PALETTES_PORT` (default `3001`).
+
 ## Check types, lint, format code
 
 To lint and format the code:
 ```bash
-biome check --write src/.
-```
-or
-```bash
-bun run check
+bunx biome check --write src/
 ```
 
 For type checking and Svelte-specific validations:
 ```bash
-bun run svelte-check
+bun run check
 ```
 This will check for TypeScript errors, unused CSS, accessibility issues, and other Svelte-specific warnings.
 
