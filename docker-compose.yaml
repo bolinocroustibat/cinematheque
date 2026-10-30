@@ -96,11 +96,7 @@ services:
       core:
         soft: 0
         hard: 0
-    environment:
-      # Server-side fetches use the Docker network; container listens on 8000 (host uses API_PORT)
-      - API_URL=http://backend:8000
-      - ENVIRONMENT=${ENVIRONMENT:-unknown}
-      - DEBUG=${DEBUG:-false}
+    # Static files only: /api must be routed to the backend on the same domain by the reverse proxy
     depends_on:
       backend:
         condition: service_healthy

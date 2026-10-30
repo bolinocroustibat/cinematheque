@@ -41,7 +41,7 @@ Compose reads the project root `.env`.
 
 - **Backend:** `DJANGO_SECRET_KEY`, Postgres (`POSTGRES_*`), `CORS_*` as in [`.env.example`](.env.example).
 - **Poster auto-fill** (films / documentaries on the server): `TMDB_API_KEY` (required for that feature); `OMDB_API_KEY` optional (TMDB fallback).
-- **Optional:** `LLM_API_KEY` (movie recommendations), `API_URL` (backend URL for Palettes server-side fetches; default `http://localhost:<API_PORT>`).
+- **Optional:** `LLM_API_KEY` (movie recommendations), `API_URL` (dev only: Vite `/api` proxy target for Palettes; default `http://localhost:<API_PORT>`).
 
 ### Useful Docker commands
 
@@ -68,7 +68,7 @@ docker compose restart
 cp .env.example .env
 ```
 
-Use the same categories as in the Docker section: backend keys (`TMDB_API_KEY`, `OMDB_API_KEY`, `LLM_API_KEY`, …). `API_URL` / `API_PORT` point the frontend at the API.
+Use the same categories as in the Docker section: backend keys (`TMDB_API_KEY`, `OMDB_API_KEY`, `LLM_API_KEY`, …). `API_URL` / `API_PORT` set the Vite dev proxy target for `/api` (default `http://localhost:<API_PORT>`).
 
 ### Backend
 
@@ -88,7 +88,7 @@ bun install
 bun run dev
 ```
 
-Use the same `API_URL` / `ENVIRONMENT` pattern as in `AGENTS.md`.
+See `frontend-palettes/README.md` for the dev proxy and the static build.
 
 ### Linting and formatting
 

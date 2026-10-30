@@ -8,19 +8,10 @@ RUN bun install --frozen-lockfile
 COPY . .
 RUN bun run build
 
-# Production stage
-FROM oven/bun:slim
-WORKDIR /app
+# Production stage: static files only, no config file needed
+FROM joseluisq/static-web-server:2
 
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile --production
+COPY --from=builder /app/build /public/palettes
 
-COPY --from=builder /app/build ./
-
-ENV HOST=0.0.0.0 \
-    PORT=3000 \
-    HOST_HEADER=host \
-    PROTOCOL_HEADER=x-forwarded-proto
-
+ENV SERVER_PORT=3000
 EXPOSE 3000
-CMD ["bun", "index.js"]

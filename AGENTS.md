@@ -12,4 +12,4 @@ App: movies, series, books, comics. Backend API + Palettes frontend.
 
 - **Stack**: SvelteKit 2, Svelte 5, TypeScript, Vite 6, Tailwind 4. Bun. Biome.
 - **Paths**: `frontend-palettes/src/` — `routes/`, `lib/types.ts`, `lib/utils.ts`.
-- **Conventions**: Same `API_URL` and `ENVIRONMENT` as the rest of the stack (repo-root `.env`, `envDir`); server-side in `+page.server.ts` via `$env/dynamic/private`. After creating or editing frontend code, lint and format: `bunx biome check --write src/` (from `frontend-palettes/`).
+- **Conventions**: Repo-root `.env` (`envDir`), only for the dev proxy (`API_URL` / `API_PORT`); static build (`@sveltejs/adapter-static`, served by static-web-server); data is fetched client-side in `routes/+page.ts` (`ssr = false`) from same-origin `/api` (proxied by Vite in dev, by the reverse proxy in prod). After creating or editing frontend code, lint and format: `bunx biome check --write src/` (from `frontend-palettes/`).
