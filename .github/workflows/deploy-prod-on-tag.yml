@@ -13,14 +13,14 @@ jobs:
       contents: write
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 0
           token: ${{ secrets.VERSION_BUMP_TOKEN != '' && secrets.VERSION_BUMP_TOKEN || github.token }}
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: true
           cache-dependency-glob: backend/uv.lock
@@ -36,7 +36,7 @@ jobs:
           sed -E -i 's/"version":[[:space:]]*"[^"]*"/"version": "${{ github.ref_name }}"/g' frontend-palettes/package.json
 
       - name: Commit and push updated pyproject.toml and package.json
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           branch: main
           commit_message: "chore: bump version to ${{ github.ref_name }}"
@@ -53,19 +53,19 @@ jobs:
       packages: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: main
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push backend Docker images to ghcr.io/${{ github.repository }}
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: ./backend
           push: true
@@ -74,7 +74,7 @@ jobs:
             ghcr.io/bolinocroustibat/cinematheque-backend:${{ github.ref_name }}
 
       - name: Build and push frontend-palettes Docker images to ghcr.io/${{ github.repository }}
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: ./frontend-palettes
           push: true
@@ -133,7 +133,7 @@ jobs:
     if: success()
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Create Sentry release
         uses: getsentry/action-release@v3
