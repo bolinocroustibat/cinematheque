@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Movie } from "$lib/types"
+import type { Movie } from "#lib/types.js"
 import PaletteCard from "./PaletteCard.svelte"
 
 interface Props {

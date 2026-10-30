@@ -1,6 +1,6 @@
 <script lang="ts">
 import "../app.css"
-import type { Movie } from "$lib/types"
+import type { Movie } from "#lib/types.js"
 import type { PageProps } from "./$types"
 import BackToTop from "./BackToTop.svelte"
 import MovieCard from "./MovieCard.svelte"

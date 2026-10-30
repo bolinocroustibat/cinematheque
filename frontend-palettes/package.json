@@ -10,20 +10,24 @@
 		"check:watch": "bunx --bun svelte-kit sync && bunx --bun svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"dependencies": {
-		"@sveltejs/kit": "^2.70.3",
-		"chroma-js": "^3.2.0",
-		"svelte": "^5.57.2"
+		"chroma-js": "^3.2.0"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.5.15",
+		"@biomejs/biome": "^2.6.4",
 		"@steeze-ui/heroicons": "^2.4.2",
 		"@steeze-ui/svelte-icon": "^1.6.2",
 		"@sveltejs/adapter-static": "^4.0.1",
-		"@sveltejs/vite-plugin-svelte": "^5.1.1",
+		"@sveltejs/kit": "^3.1.1",
+		"@sveltejs/vite-plugin-svelte": "^7.3.1",
 		"@tailwindcss/vite": "^4.3.3",
 		"@types/chroma-js": "^2.4.5",
+		"svelte": "^5.57.3",
 		"svelte-check": "^4.7.7",
-		"typescript": "^5.9.3",
-		"vite": "^6.4.4"
+		"typescript": "^6.0.3",
+		"vite": "^8.3.5"
+	},
+	"imports": {
+		"#lib": "./src/lib/index.js",
+		"#lib/*": "./src/lib/*"
 	}
 }

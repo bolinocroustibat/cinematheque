@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { Palette } from "$lib/types"
-import { formatDate, hexToRgb } from "$lib/utils"
+import type { Palette } from "#lib/types.js"
+import { formatDate, hexToRgb } from "#lib/utils.js"
 
 interface Props {
 	palette: Palette

@@ -7,9 +7,9 @@ Goes hand in hand with the [movies-palettes](https://github.com/adriencarpentier
 
 - [Bun](https://bun.sh) 1.0.x or higher
 - **Language**: TypeScript
-- **Framework**: SvelteKit 2.x with Svelte 5, built as a static site with [@sveltejs/adapter-static](https://svelte.dev/docs/kit/adapter-static)
+- **Framework**: SvelteKit 3 with Svelte 5, built as a static site with [@sveltejs/adapter-static](https://svelte.dev/docs/kit/adapter-static)
 - **Styling**: TailwindCSS 4
-- **Build Tool**: Vite
+- **Build Tool**: Vite 8 (SvelteKit is configured in `vite.config.ts`)
 - **Deployment**: [static-web-server](https://static-web-server.net) Docker image built by GitHub Actions with automatic versioning
 - **Code Linting and Formatting**: [Biome](https://biomejs.dev)
 

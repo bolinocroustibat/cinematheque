@@ -1,5 +1,5 @@
-import type { Movie } from "$lib/types"
-import { sortColorsByProximity } from "$lib/utils"
+import type { Movie } from "#lib/types.js"
+import { sortColorsByProximity } from "#lib/utils.js"
 import type { PageLoad } from "./$types"
 
 // Static build: data is fetched by the browser from the backend
