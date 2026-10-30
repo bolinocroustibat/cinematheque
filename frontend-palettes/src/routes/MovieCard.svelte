@@ -9,15 +9,19 @@ interface Props {
 }
 const { movie, isExpanded, onToggle }: Props = $props()
 
+const palettes = $derived(movie.palettes ?? [])
+
 const latestPalette = $derived(
-	movie.palettes?.reduce((latest, current) => {
-		if (!current.calculation_date) return latest
-		if (!latest.calculation_date) return current
-		return new Date(current.calculation_date) >
-			new Date(latest.calculation_date)
-			? current
-			: latest
-	}),
+	palettes.length > 0
+		? palettes.reduce((latest, current) => {
+				if (!current.calculation_date) return latest
+				if (!latest.calculation_date) return current
+				return new Date(current.calculation_date) >
+					new Date(latest.calculation_date)
+					? current
+					: latest
+			})
+		: undefined,
 )
 </script>
 
@@ -29,8 +33,8 @@ const latestPalette = $derived(
 >
 	<div 
 		class="bg-white/80 dark:bg-neutral-900/80 rounded-xl p-6 border border-neutral-200 dark:border-neutral-800 cursor-pointer shadow-lg hover:shadow-xl hover:border-neutral-300 dark:hover:border-neutral-700 transition-[width,transform,opacity] duration-500 ease-in-out relative"
-		class:w-[292px]={!isExpanded || movie.palettes?.length === 1}
-		class:w-auto={isExpanded && movie.palettes.length > 1}
+		class:w-[292px]={!isExpanded || palettes.length === 1}
+		class:w-auto={isExpanded && palettes.length > 1}
 		class:scale-105={isExpanded}
 		class:z-10={isExpanded}
 		onclick={onToggle}
@@ -50,11 +54,13 @@ const latestPalette = $derived(
 		</div>
 
 		<div class="flex flex-row flex-wrap justify-center transition-all duration-500 ease-in-out" style:gap={isExpanded ? '1.5rem' : '0'}>
-			<PaletteCard palette={latestPalette} {isExpanded} />
-			{#if isExpanded && movie.palettes.length > 1}
-				{#each movie.palettes.filter(p => p.id !== latestPalette.id) as palette}
-					<PaletteCard palette={palette} isExpanded={true} />
-				{/each}
+			{#if latestPalette}
+				<PaletteCard palette={latestPalette} {isExpanded} />
+				{#if isExpanded && palettes.length > 1}
+					{#each palettes.filter(p => p.id !== latestPalette.id) as palette}
+						<PaletteCard palette={palette} isExpanded={true} />
+					{/each}
+				{/if}
 			{/if}
 		</div>
 	</div>

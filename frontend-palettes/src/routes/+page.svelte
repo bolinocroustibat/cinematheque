@@ -7,7 +7,6 @@ import MovieCard from "./MovieCard.svelte"
 import ThemeToggle from "./ThemeToggle.svelte"
 
 const { data }: PageProps = $props()
-const { movies } = data
 
 // Log the version when the component initializes
 console.log("App version:", __APP_VERSION__)
@@ -15,7 +14,9 @@ console.log("App version:", __APP_VERSION__)
 let expandedMovieId = $state<number | null>(null)
 
 const validMovies = $derived(
-	movies.filter((movie: Movie) => movie.palettes && movie.palettes.length > 0),
+	data.movies.filter(
+		(movie: Movie) => movie.palettes && movie.palettes.length > 0,
+	),
 )
 </script>
 
