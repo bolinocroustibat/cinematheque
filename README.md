@@ -25,7 +25,7 @@ docker compose up -d
 
 Open:
 
-- **Palettes:** `http://localhost:3001` (`FRONTEND_PALETTES_PORT`)
+- **Palettes:** `http://localhost:3000` (`FRONTEND_PALETTES_PORT`)
 - **API:** `http://localhost:8000` (`API_PORT`)
 
 ### Docker configuration

@@ -63,7 +63,7 @@ bun run preview
 
 ## Docker
 
-The `Dockerfile` builds the app with Bun, then serves `build/` under `/palettes` with static-web-server on port 3000 (no config file). The container only serves static files: the reverse proxy must route `/api` to the backend on the same domain. In `docker-compose.yaml`, the `frontend-palettes` service is published on `FRONTEND_PALETTES_PORT` (default `3001`).
+The `Dockerfile` builds the app with Bun, then serves `build/` under `/palettes` with static-web-server on port 3000 (no config file). The container only serves static files: the reverse proxy must route `/api` to the backend on the same domain. In `docker-compose.yaml`, the `frontend-palettes` service is published on `FRONTEND_PALETTES_PORT` (default `3000`).
 
 ## Check types, lint, format code
 

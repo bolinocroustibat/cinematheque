@@ -54,7 +54,7 @@ services:
 
       # CORS settings
       - CORS_ORIGIN_ALLOW_ALL=${CORS_ORIGIN_ALLOW_ALL:-True}
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:${FRONTEND_PALETTES_PORT:-3001}}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:${FRONTEND_PALETTES_PORT:-3000}}
 
       # Movie recommendations LLM (Gemini today; same env if you swap provider)
       - LLM_API_KEY=${LLM_API_KEY}
@@ -90,7 +90,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${FRONTEND_PALETTES_PORT:-3001}:3000"
+      - "127.0.0.1:${FRONTEND_PALETTES_PORT:-3000}:3000"
     # Disable core dumps (crash memory snapshots) so a crash loop cannot fill the disk
     ulimits:
       core:
